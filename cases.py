@@ -1,5 +1,6 @@
 import random
 
+#cases
 class Cases:
 
     def __init__(self):
