@@ -1,0 +1,3 @@
+John has got ___ CDs.:some:any.little
+Have you got ___ grammer books?:any:some.the
+I don’t want ___ milk in my coffee.:any:many.some
