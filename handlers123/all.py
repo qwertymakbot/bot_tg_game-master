@@ -1442,6 +1442,7 @@ async def case(message: types.Message):
     prize = await case.open_little_case()
     await db.give_prize_in_little_case(message=message, prize=prize)
     await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} Купил маленький кейс за 4000$')
+    await asyncio.sleep(2)
     await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
 
 
