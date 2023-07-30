@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from cases import Database, Cases
 
 from bot import Dispatcher, check_user, database, types, InlineKeyboardButton, InlineKeyboardMarkup, \
     InputFile, quote_html, username, username_2, pytz, scheduler, add_time_min, res_database, start_vuz
@@ -1435,6 +1436,16 @@ async def all(callback: types.CallbackQuery):
     await bot.answer_callback_query(callback.id)
 
 
+async def case(message: types.Message):
+    db = Database()
+    case = Cases()
+    prize = await case.open_little_case()
+    await db.give_prize_in_little_case(message=message, prize=prize)
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} Купил маленький кейс за 4000$')
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
+
+
 def reg_all(dp: Dispatcher):
     dp.register_callback_query_handler(otmena, text='otmena')
     dp.register_callback_query_handler(all)
+    dp.register_message_handler(case, text = 'Кейс за 4000')
