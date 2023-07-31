@@ -603,7 +603,7 @@ async def me(message):
                    fill=15)
     # фото профиля
     user_profile_photo = await bot.get_user_profile_photos(message.from_user.id, limit=1)
-    if user_profile_photo.photos[0]:
+    if user_profile_photo.photos:
         file = await bot.get_file(user_profile_photo.photos[0][0].file_id)
         await bot.download_file(file.file_path, f'{os.getcwd()}/res/me_pic/profile.png')
         img_profile = Image.open(f'{os.getcwd()}/res/me_pic/profile.png').convert("RGBA")
