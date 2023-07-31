@@ -93,7 +93,7 @@ async def work(message: types.Message):
                                                               {'$set': {
                                                                   'food': country_info['food'] - job_info['need_food']}})
                                 # Если есть машина
-                                car_info = database.users_car.find_one({'id': user_id})
+                                car_info = database.users_cars.find_one({'id': user_id})
                                 arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
                                 if car_info is not None:
                                     need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
