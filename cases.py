@@ -49,7 +49,7 @@ class Database:
                 'id': message.from_user.id,
                 'car': prize[0],
                 'active': False,
-                'fuel_per_hour':car_info['fuel_per_hour']
+                'fuel_per_hour': car_info['fuel_per_hour']
             })
 
 
@@ -165,7 +165,7 @@ class Cases:
                     return [exp, 'exp']
 
             case 'car':
-                rand = random.randint(0, 2)
+                rand = random.randint(0, 6)
                 if rand == 1 or rand == 2:
                     car_name = random.choice(ecar)
                     return [car_name, 'car']

@@ -1448,7 +1448,7 @@ async def little_case(message: types.Message):
     case = Cases()
     prize = await case.open_little_case()
     await db.give_prize_in_little_case(message=message, prize=prize)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил маленький кейс за 4000$')
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил маленький кейс за 10000$')
     await bot.send_dice(message.chat.id)
     await asyncio.sleep(4)
     await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
@@ -1459,10 +1459,13 @@ async def middle_case(message: types.Message):
     case = Cases()
     prize = await case.open_middle_case()
     await db.give_prize_in_middle_case(message=message, prize=prize)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил средний кейс за 10000$')
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил средний кейс за 100000$')
     await bot.send_dice(message.chat.id)
     await asyncio.sleep(4)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
+    if prize[1] == 'car':
+        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}')
+    else:
+        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
 
 
 async def big_case(message: types.Message):
@@ -1470,7 +1473,7 @@ async def big_case(message: types.Message):
     case = Cases()
     prize = await case.open_big_case()
     await db.give_prize_in_big_case(message=message, prize=prize)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} Купил большой кейс за 15000$')
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} Купил большой кейс за 150000$')
     await bot.send_dice(message.chat.id)
     await asyncio.sleep(4)
     if prize[1] == 'car':
