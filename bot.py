@@ -749,23 +749,6 @@ async def cars(message):
             print(f'res/cars_pic/{cars_data[num_car - 1]["name_car"] + " " + cars_data[num_car - 1]["color"]}.png')
 
 
-# /shop Магазин
-@dp.message_handler(commands='shop')
-async def shop(message):
-    await check_user(message)
-    user_info = database.users.find_one({'id': message.from_user.id})
-    if user_info["citizen_country"] != 'нет':  # Если гражданин
-        key = types.InlineKeyboardMarkup()
-        # Категории в магазине
-        cars = types.InlineKeyboardButton(text='Машины 🚗', callback_data='Магазин_машины')
-        key.add(cars)
-        await bot.send_message(message.chat.id,
-                               text=f'@{message.from_user.username}, выберите категорию!', reply_markup=key)
-
-    else:
-        await message.answer(
-            f'@{message.from_user.username}, для начала вам нужно стать гражданином какой-либо страны! (/citizen)')
-
 
 @dp.message_handler(commands='id')
 async def n1(message):

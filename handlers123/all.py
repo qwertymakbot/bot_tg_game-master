@@ -5,7 +5,7 @@ import random
 
 from bot import Dispatcher, check_user, database, types, InlineKeyboardButton, InlineKeyboardMarkup, \
     InputFile, quote_html, username, username_2, pytz, scheduler, add_time_min, res_database, start_vuz
-from cases import Database, Cases
+from cases import Database, Cases, little_case, middle_case, big_case
 from create_bot import bot
 
 
@@ -1435,51 +1435,36 @@ async def all(callback: types.CallbackQuery):
             await callback.message.edit_text(f'{await username(callback)}, вам нужно уволиться\n'
                                              f'❗️ Чтобы уволиться напишите - Уволиться', parse_mode='HTML')
     """🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼РАБОТА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼"""
+    if 'Кейсы' in data_callback:
+        case_keyboard = InlineKeyboardMarkup(row_width=1)
+        buy_little_case_btn = InlineKeyboardButton(text='Маленький кейс за 10000$', callback_data='Кейс_маленький')
+        buy_middle_case_btn = InlineKeyboardButton(text='Средний кейс за 100000$', callback_data='Кейс_средний')
+        buy_big_case_btn = InlineKeyboardButton(text='Большой кейс за 150000$', callback_data='Кейс_большой')
+        case_keyboard.add(buy_little_case_btn, buy_middle_case_btn, buy_big_case_btn)
+        await callback.message.edit_text(text='Доступны следующие кейсы:', reply_markup=case_keyboard)
+
+
+    if 'Кейс_' in data_callback:
+        if 'Кейс_маленький' in data_callback:
+            await callback.message.delete()
+            await little_case(callback=callback)
+        elif 'Кейс_средний' in data_callback:
+            await callback.message.delete()
+            await middle_case(callback=callback)
+        elif 'Кейс_большой' in data_callback:
+            await callback.message.delete()
+            await big_case(callback=callback)
+    '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼КЕЙСЫ🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     await bot.answer_callback_query(callback.id)
 
 
-async def little_case(message: types.Message):
-    db = Database()
-    case = Cases()
-    prize = await case.open_little_case()
-    await db.give_prize_in_little_case(message=message, prize=prize)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил маленький кейс за 10000$')
-    await bot.send_dice(message.chat.id)
-    await asyncio.sleep(4)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
 
 
-async def middle_case(message: types.Message):
-    db = Database()
-    case = Cases()
-    prize = await case.open_middle_case()
-    await db.give_prize_in_middle_case(message=message, prize=prize)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил средний кейс за 100000$')
-    await bot.send_dice(message.chat.id)
-    await asyncio.sleep(4)
-    if prize[1] == 'car':
-        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}')
-    else:
-        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
 
 
-async def big_case(message: types.Message):
-    db = Database()
-    case = Cases()
-    prize = await case.open_big_case()
-    await db.give_prize_in_big_case(message=message, prize=prize)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} Купил большой кейс за 150000$')
-    await bot.send_dice(message.chat.id)
-    await asyncio.sleep(4)
-    if prize[1] == 'car':
-        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}')
-    else:
-        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
 
 
 def reg_all(dp: Dispatcher):
     dp.register_callback_query_handler(otmena, text='otmena')
     dp.register_callback_query_handler(all)
-    dp.register_message_handler(little_case, text='Кейс за 10000')
-    dp.register_message_handler(middle_case, text='Кейс за 50000')
-    dp.register_message_handler(big_case, text='Кейс за 100000')
+
