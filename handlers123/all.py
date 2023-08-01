@@ -1,11 +1,11 @@
 import asyncio
 import json
 import os
-from cases import Database, Cases
+import random
 
 from bot import Dispatcher, check_user, database, types, InlineKeyboardButton, InlineKeyboardMarkup, \
     InputFile, quote_html, username, username_2, pytz, scheduler, add_time_min, res_database, start_vuz
-import random
+from cases import Database, Cases
 from create_bot import bot
 
 
@@ -1190,7 +1190,8 @@ async def all(callback: types.CallbackQuery):
             await callback.answer(f'Вас успешно вылечили!')
 
             await bot.edit_message_text(
-                f'{await username_2(int(data[0]),heal_user["username"])} успешно вылечил {await username_2(int(data[1]),disease_user["username"])} за {data[2]}$',callback.message.chat.id, callback.message.message_id, parse_mode='HTML' )
+                f'{await username_2(int(data[0]), heal_user["username"])} успешно вылечил {await username_2(int(data[1]), disease_user["username"])} за {data[2]}$',
+                callback.message.chat.id, callback.message.message_id, parse_mode='HTML')
             # Убирание задачи с болезнью
             scheduler.remove_job(str(callback.from_user.id))
         else:
@@ -1200,8 +1201,9 @@ async def all(callback: types.CallbackQuery):
         if str(callback.from_user.id) == data[1]:
             disease_user = database.users.find_one({'id': int(data[1])})
             await callback.answer(f'Вы отказались от лечения!')
-            await bot.edit_message_text(f'{await username_2(int(data[1]),disease_user["username"])} отказался от лечения за {data[2]}$',
-                                        callback.message.chat.id, callback.message.message_id, parse_mode='HTML')
+            await bot.edit_message_text(
+                f'{await username_2(int(data[1]), disease_user["username"])} отказался от лечения за {data[2]}$',
+                callback.message.chat.id, callback.message.message_id, parse_mode='HTML')
         else:
             await callback.answer(f'Это предназначено не вам!')
     """🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ФЕЛЬДШЕР ДА НЕТ🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼"""
@@ -1260,7 +1262,8 @@ async def all(callback: types.CallbackQuery):
             await callback.message.delete()
             await bot.send_photo(callback.message.chat.id,
                                  photo=InputFile(path + f'/res/country_pic/{data[2]}.png'),
-                                 caption=f'{await username_2(int(data[0]),pres_info["username"])} у вас появился новый гражданин {await username_2(int(data[1]),citiz_info["username"])}', parse_mode='HTML')
+                                 caption=f'{await username_2(int(data[0]), pres_info["username"])} у вас появился новый гражданин {await username_2(int(data[1]), citiz_info["username"])}',
+                                 parse_mode='HTML')
         else:
             await callback.answer(f'Это предназначено не вам!')
     if 'Гр_нет_' in data_callback:
@@ -1296,8 +1299,8 @@ async def all(callback: types.CallbackQuery):
             # Страна обрела президента
             database.countries.update_one({'country': country}, {'$set': {'president': user_id}})
             await bot.send_photo(callback.message.chat.id,
-                                   caption=f'{await username(callback)} успешно купил страну - {country}! 🌍\n' + ''.join(
-                                       msg_data), photo=InputFile(
+                                 caption=f'{await username(callback)} успешно купил страну - {country}! 🌍\n' + ''.join(
+                                     msg_data), photo=InputFile(
                     f'{os.getcwd()}/res/country_pic/{country}.png'), parse_mode='HTML')
         elif user_info['cash'] < country_info['cost']:
             await callback.answer(f'Вам нужно ещё {country_info["cost"] - user_info["cash"]:n}$')
@@ -1368,15 +1371,16 @@ async def all(callback: types.CallbackQuery):
     if 'vuz_' in data_callback:
         name_job = data_callback.replace('vuz_', '')
         job_info = database.jobs.find_one({'name_job': name_job})
-        await callback.message.edit_text(f'{await username(callback)}, для обучения в ВУЗе "{name_job}" вам понадобится:\n'
-                                         f'    - {job_info["need_exp"]} опыта\n'
-                                         f'    - {job_info["need_cash"]}$\n'
-                                         f'    - Обучение длится 24 часа\n\n'
-                                         f'❗️ По окончании обучения вы получите возможность работать по профессии {name_job}',
-                                         reply_markup=InlineKeyboardMarkup(1).add(
-                                             InlineKeyboardButton('Начать обучение',
-                                                                  callback_data=f'start_vu_{name_job}'),
-                                             InlineKeyboardButton('Отмена', callback_data='otmena')), parse_mode='HTML')
+        await callback.message.edit_text(
+            f'{await username(callback)}, для обучения в ВУЗе "{name_job}" вам понадобится:\n'
+            f'    - {job_info["need_exp"]} опыта\n'
+            f'    - {job_info["need_cash"]}$\n'
+            f'    - Обучение длится 24 часа\n\n'
+            f'❗️ По окончании обучения вы получите возможность работать по профессии {name_job}',
+            reply_markup=InlineKeyboardMarkup(1).add(
+                InlineKeyboardButton('Начать обучение',
+                                     callback_data=f'start_vu_{name_job}'),
+                InlineKeyboardButton('Отмена', callback_data='otmena')), parse_mode='HTML')
     # Начало обучения в ВУЗе
     if 'start_vu_' in data_callback:
         name_job = data_callback.replace('start_vu_', '')
@@ -1392,18 +1396,21 @@ async def all(callback: types.CallbackQuery):
                 database.users.update_one({'id': callback.from_user.id},
                                           {'$set': {'cash': user_info['cash'] - int(job_info['need_cash']),
                                                     'exp': user_info['exp'] - int(job_info['need_exp'])}})
-                await callback.message.edit_text(f'{await username(callback)},вы начали обучение по профессии {name_job}\n'
-                                                 f'- {job_info["need_exp"]} опыта\n'
-                                                 f'- {job_info["need_cash"]}$\n'
-                                                 f'❗️ До окончания осталось 24 часа', parse_mode='HTML')
+                await callback.message.edit_text(
+                    f'{await username(callback)},вы начали обучение по профессии {name_job}\n'
+                    f'- {job_info["need_exp"]} опыта\n'
+                    f'- {job_info["need_cash"]}$\n'
+                    f'❗️ До окончания осталось 24 часа', parse_mode='HTML')
                 tz = pytz.timezone('Etc/GMT-3')
                 res_database.vuz.insert_one({'id': callback.from_user.id,
-                                         'job': name_job,
-                                         'time': await add_time_min(1440)})
-                scheduler.add_job(start_vuz, trigger="date", run_date=await add_time_min(1440), timezone=tz, id=f'{callback.from_user.id}_vuz',
+                                             'job': name_job,
+                                             'time': await add_time_min(1440)})
+                scheduler.add_job(start_vuz, trigger="date", run_date=await add_time_min(1440), timezone=tz,
+                                  id=f'{callback.from_user.id}_vuz',
                                   args=(callback.from_user.id, name_job))
             else:
-                await callback.message.edit_text(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+                await callback.message.edit_text(f'{await username(callback)}, у вас недостаточно средств!',
+                                                 parse_mode='HTML')
 
         else:
             await callback.message.edit_text(f'{await username(callback)}, вы уже обучаетесь', parse_mode='HTML')
@@ -1436,18 +1443,48 @@ async def all(callback: types.CallbackQuery):
     await bot.answer_callback_query(callback.id)
 
 
-async def case(message: types.Message):
+async def little_case(message: types.Message):
     db = Database()
     case = Cases()
     prize = await case.open_little_case()
     await db.give_prize_in_little_case(message=message, prize=prize)
-    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} Купил маленький кейс за 4000$')
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил маленький кейс за 10000$')
     await bot.send_dice(message.chat.id)
     await asyncio.sleep(4)
     await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
 
 
+async def middle_case(message: types.Message):
+    db = Database()
+    case = Cases()
+    prize = await case.open_middle_case()
+    await db.give_prize_in_middle_case(message=message, prize=prize)
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} купил средний кейс за 100000$')
+    await bot.send_dice(message.chat.id)
+    await asyncio.sleep(4)
+    if prize[1] == 'car':
+        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}')
+    else:
+        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
+
+
+async def big_case(message: types.Message):
+    db = Database()
+    case = Cases()
+    prize = await case.open_big_case()
+    await db.give_prize_in_big_case(message=message, prize=prize)
+    await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} Купил большой кейс за 150000$')
+    await bot.send_dice(message.chat.id)
+    await asyncio.sleep(4)
+    if prize[1] == 'car':
+        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}')
+    else:
+        await bot.send_message(message.chat.id, text=f'{message.from_user.first_name} выбил {prize[0]}{prize[1]}')
+
+
 def reg_all(dp: Dispatcher):
     dp.register_callback_query_handler(otmena, text='otmena')
     dp.register_callback_query_handler(all)
-    dp.register_message_handler(case, text = 'Кейс за 4000')
+    dp.register_message_handler(little_case, text='Кейс за 10000')
+    dp.register_message_handler(middle_case, text='Кейс за 50000')
+    dp.register_message_handler(big_case, text='Кейс за 100000')
