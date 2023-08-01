@@ -69,7 +69,8 @@ class Database:
                 'id': message.from_user.id,
                 'car': prize[0],
                 'active': False,
-                'fuel_per_hour': car_info['fuel_per_hour']
+                'fuel_per_hour': car_info['fuel_per_hour'],
+                'save_job_time': car_info['save_job_time']
             })
 
 

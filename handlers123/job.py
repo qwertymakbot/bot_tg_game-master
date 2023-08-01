@@ -97,13 +97,13 @@ async def work(message: types.Message):
                                 arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
                                 if car_info is not None:
                                     need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
-                                    if car_info['oil'] >= need_oil:
+                                    if user_info['oil'] >= need_oil:
                                         # Сжигаем топливо
                                         database.users_cars.update_one(
-                                            {'$and': [{'user_id': user_id}, {'car': car_info['name_car']}]},
-                                            {'$set': {'oil': car_info['oil'] - need_oil}})
+                                            {'$and': [{'user_id': user_id}, {'car': car_info["car"]}]},
+                                            {'$set': {'oil': user_info['oil'] - need_oil}})
                                         # Вычисление времени на работу едя на машине
-                                        job_time = int(job_info['job_time'] * (job_info['save_job_time'] / 100))
+                                        job_time = int(job_info['job_time'] * (car_info['save_job_time'] / 100))
                                         await bot.send_photo(message.chat.id,
                                                              photo=InputFile(
                                                                  f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
@@ -125,7 +125,7 @@ async def work(message: types.Message):
                                         await bot.send_photo(message.chat.id,
                                                              photo=InputFile(
                                                                  f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                             caption=f'{await username(message)}, в вашем {car_info["name_car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
+                                                             caption=f'{await username(message)}, в вашем {car_info["car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
                                                                      f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
                                         # SCHEDULER
                                         res_database.job.update_one({'id': user_id},
@@ -205,17 +205,17 @@ async def work(message: types.Message):
                             database.countries.update_one({'country': user_info['citizen_country']},
                                                           {'$set': {'food': country_info['food'] - job_info['need_food']}})
                             # Если есть машина
-                            car_info = database.users_car.find_one({'id': user_id})
+                            car_info = database.users_cars.find_one({'id': user_id})
                             arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
                             if car_info is not None:
                                 need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
-                                if car_info['oil'] >= need_oil:
+                                if user_info['oil'] >= need_oil:
                                     # Сжигаем топливо
                                     database.users_cars.update_one(
-                                        {'$and': [{'user_id': user_id}, {'car': car_info['name_car']}]},
-                                        {'$set': {'oil': car_info['oil'] - need_oil}})
+                                        {'$and': [{'user_id': user_id}, {'car': car_info["car"]}]},
+                                        {'$set': {'oil': user_info['oil'] - need_oil}})
                                     # Вычисление времени на работу едя на машине
-                                    job_time = int(job_info['job_time'] * (job_info['save_job_time'] / 100))
+                                    job_time = int(job_info['job_time'] * (car_info['save_job_time'] / 100))
                                     await bot.send_photo(message.chat.id,
                                                          photo=InputFile(
                                                              f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
@@ -236,7 +236,7 @@ async def work(message: types.Message):
                                     await bot.send_photo(message.chat.id,
                                                          photo=InputFile(
                                                              f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                         caption=f'{await username(message)}, в вашем {car_info["name_car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
+                                                         caption=f'{await username(message)}, в вашем {car_info["car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
                                                                  f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
                                     # SCHEDULER
                                     res_database.job.update_one({'id': user_id},

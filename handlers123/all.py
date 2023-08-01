@@ -26,23 +26,18 @@ async def all(callback: types.CallbackQuery):
         user_info = database.users.find_one({'id': user_id})
         car_info = database.cars.find_one({'name_car': data_callback})
         if car_info['count'] == 0:
-            await bot.send_message(callback.message.chat.id, message_thread_id=callback.message.message_thread_id,
-                                   text=f'@{callback.from_user.username}, {car_info["name_car"]} нет в наличии!')
+            await bot.send_message(callback.message.chat.id,
+                                   text=f'{await username(callback)}, {car_info["name_car"]} нет в наличии!', parse_mode='HTML')
             return
         if user_info['cash'] >= car_info['cost']:
-            count_user_car = database.users_cars.find_one({'id': user_id, 'car': car_info['name_car']})
+            count_user_car = database.users_cars.find_one({'$and': [{'id': user_id}, {'car': car_info['name_car']}]})
             if count_user_car is None:
                 database.users_cars.insert_one({'id': user_id,
                                                 'car': car_info['name_car'],
-                                                'color': car_info['color'],
-                                                'cost': car_info['cost'],
-                                                'country': car_info['country'],
-                                                'oil': 0,
-                                                'count': 1,
                                                 'fuel_per_hour': car_info['fuel_per_hour'],
                                                 'save_job_time': car_info['save_job_time'],
-                                                'hp': car_info['hp'],
-                                                'active': True})
+                                                'count': 1,
+                                                'active': False})
                 # -1 из наличия
                 database.cars.update_one({'name_car': data_callback}, {'$set': {'count': car_info['count'] - 1}})
                 # Снятие денег с баланса
@@ -51,10 +46,10 @@ async def all(callback: types.CallbackQuery):
                 country_info = database.countries.find_one({'country': car_info['country']})
                 database.countries.update_one({'country': car_info['country']},
                                               {'$set': {'cash': country_info['cash'] + car_info['cost']}})
-                await bot.send_photo(callback.message.chat.id, message_thread_id=callback.message.message_thread_id,
-                                     caption=f'@{callback.from_user.username}, успешно приобрел машину!',
+                await bot.send_photo(callback.message.chat.id,
+                                     caption=f'{await username(callback)}, успешно приобрел машину!',
                                      photo=InputFile(
-                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'))
+                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'), parse_mode='HTML')
             else:
                 # Добавление машины пользователю
                 database.users_cars.update_one({'id': user_id, 'car': car_info['name_car']},
@@ -67,14 +62,14 @@ async def all(callback: types.CallbackQuery):
                 country_info = database.countries.find_one({'country': car_info['country']})
                 database.countries.update_one({'country': car_info['country']},
                                               {'$set': {'cash': country_info['cash'] + car_info['cost']}})
-                await bot.send_photo(callback.message.chat.id, message_thread_id=callback.message.message_thread_id,
-                                     caption=f'@{callback.from_user.username}, успешно приобрел машину!',
+                await bot.send_photo(callback.message.chat.id,
+                                     caption=f'{await username(callback)}, успешно приобрел машину!',
                                      photo=InputFile(
-                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'))
+                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'), parse_mode='HTML')
 
         else:
-            await bot.send_message(callback.message.chat.id, message_thread_id=callback.message.message_thread_id,
-                                   text=f'@{callback.from_user.username}, у вас недостаточно средств!')
+            await bot.send_message(callback.message.chat.id,
+                                   text=f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽РУЛЕТКА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     # Выбор стола в рулетке
     if 'rulette_' in data_callback:
