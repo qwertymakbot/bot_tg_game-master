@@ -50,7 +50,7 @@ class Database:
         elif 'car' in prize[1]:
             car_info = database.cars.find_one({'name_car': prize[0]})
             user_cars = database.users_cars.find({'id': callback.from_user.id})
-            if car_info['name'] in user_cars:
+            if car_info['name_car'] in user_cars:
                 await callback.message.answer(text=f'Вы выиграли машину которая уже присутствует в вашем гараже')
                 return
             else:
@@ -77,7 +77,7 @@ class Database:
         elif 'car' in prize[1]:
             car_info = database.cars.find_one({'name_car': prize[0]})
             user_cars = database.users_cars.find({'id': callback.from_user.id})
-            if car_info['name'] in user_cars:
+            if car_info['name_car'] in user_cars:
                 await callback.message.answer(text=f'Вы выиграли машину которая уже присутствует в вашем гараже')
                 return
             else:

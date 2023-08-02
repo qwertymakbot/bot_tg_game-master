@@ -31,7 +31,7 @@ from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDic
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from background import keep_alive
+from background import*
 t = Translator()
 openai.api_key = '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'
 
@@ -1151,7 +1151,7 @@ scheduler = AsyncIOScheduler()
 scheduler.start()
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    keep_alive()
+
     # Регистрация хендлеров
     from handlers123 import job, bussiness, inline_cancel_bus, all, bonus, education
     from handlers123.shop import inline_shop
