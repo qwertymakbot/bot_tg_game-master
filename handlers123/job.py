@@ -9,7 +9,6 @@ from dateutil import parser
 import random
 import asyncio
 
-
 food_mak = 40
 food_povar = 90
 food_pekar = 70
@@ -40,220 +39,81 @@ async def work(message: types.Message):
                 res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
                 await work(message)
             else:
-                await bot.send_message(message.chat.id, f'{await username(message)}, вы уже работаете, вам ещё осталось {result}',
-                                   parse_mode='HTML')
+                await bot.send_message(message.chat.id,
+                                       f'{await username(message)}, вы уже работаете, вам ещё осталось {result}',
+                                       parse_mode='HTML')
             return
         else:
-            if res_disease_info is not None:  # Если есть болезнь
-                # Получение переменных с строки
+            rand_num = random.randint(1, 10)
+            if rand_num == 1:  # Если заболел
+
+                all_diseases = database.diseases.find()
+                disease_info = random.choice(list(all_diseases))
+
+                # Добавление в бд инфы о болезни
+                res_database.disease.insert_one({'id': user_id,
+                                                 'time': await add_time_min(disease_info['time']),
+                                                 'disease': True})
                 tz = pytz.timezone('Etc/GMT-3')
-                date, time = res_disease_info['time'].split(' ')
-                year, month, day = date.split('-')
-                hour, minute, second = time.split(':')
-                time_disease = datetime.datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
-                time_now = datetime.datetime(datetime.datetime.now(tz=tz).year, datetime.datetime.now(tz=tz).month,
-                                             datetime.datetime.now(tz=tz).day, datetime.datetime.now(tz=tz).hour,
-                                             datetime.datetime.now(tz=tz).minute, datetime.datetime.now(tz=tz).second)
-                result = time_disease - time_now
-                # Если уже отболел
-                if '-' in str(result):
-                    res_database.disease.delete_one({'id': user_id})
-                    rand_num = random.randint(1, 10)
-                    if rand_num == 1:  # Если заболел
-
-                        all_diseases = database.diseases.find()
-                        disease_info = random.choice(list(all_diseases))
-
-                        # Добавление в бд инфы о болезни
-                        res_database.disease.insert_one({'id': user_id,
-                                                         'time': await add_time_min(disease_info['time']),
-                                                         'disease': True})
-                        tz = pytz.timezone('Etc/GMT-3')
-                        scheduler.add_job(end_disease, "date",
-                                          run_date=await add_time_min(disease_info['time']),
-                                          args=(message,), id=str(user_id), timezone=tz)
-                        await bot.send_message(message.chat.id,
-                                               f'{await username(message)}, вы заболели болезнью {disease_info["disease"].lower()} на время {disease_info["time"]} минут 🦠',
-                                               parse_mode='HTML')
-                    else:
-                        if user_info['citizen_country'] != 'нет':  # Если гражданин
-                            job_info = database.jobs.find_one({'name_job': user_info['job']})
-                            country_info = database.countries.find_one({'country': user_info['citizen_country']})
-                            if country_info['food'] >= job_info['need_food']:  # Если в стране достаточно еды
-                                # Если строитель, то не работаем
-                                if user_info['job'] == 'Строитель':
-                                    builder_info = database.builders_work.find_one({'id': user_id})
-                                    if builder_info is not None:
-                                        await message.answer(
-                                            f'{await username(message)}, сначала завершите либо покиньте стройку',
-                                            reply_markup='HTML')
-                                        return
-                                # Снятие еды со страны за работу
-                                database.countries.update_one({'country': user_info['citizen_country']},
-                                                              {'$set': {
-                                                                  'food': country_info['food'] - job_info['need_food']}})
-                                # Если есть машина
-                                car_info = database.users_cars.find_one({'id': user_id})
-                                arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
-                                if car_info is not None:
-                                    need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
-                                    if user_info['oil'] >= need_oil:
-                                        # Сжигаем топливо
-                                        database.users_cars.update_one(
-                                            {'$and': [{'user_id': user_id}, {'car': car_info["car"]}]},
-                                            {'$set': {'oil': user_info['oil'] - need_oil}})
-                                        # Вычисление времени на работу едя на машине
-                                        job_time = int(job_info['job_time'] * (car_info['save_job_time'] / 100))
-                                        await bot.send_photo(message.chat.id,
-                                                             photo=InputFile(
-                                                                 f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                             caption=f'{await username(message)}, вы поехали на машине и начали работать по профессии {user_info["job"].lower()}\n'
-                                                                     f'Через {job_time} минут вы закончите!\n'
-                                                                     f'Вы потратили:\n'
-                                                                     f'🖤 -{need_oil}л', parse_mode='HTML')
-                                        # SCHEDULER
-                                        res_database.job.update_one({'id': user_id},
-                                                                    {'$set': {
-                                                                        'time': await add_time_min(job_info['job_time']),
-                                                                        'working': True}})
-                                        tz = pytz.timezone('Etc/GMT-3')
-                                        scheduler.add_job(end_job_citizen, "date",
-                                                          run_date=await add_time_min(job_time),
-                                                          args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                                    # Если нет топлива
-                                    else:
-                                        await bot.send_photo(message.chat.id,
-                                                             photo=InputFile(
-                                                                 f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                             caption=f'{await username(message)}, в вашем {car_info["car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
-                                                                     f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
-                                        # SCHEDULER
-                                        res_database.job.update_one({'id': user_id},
-                                                                    {'$set': {
-                                                                        'time': await add_time_min(job_info['job_time']),
-                                                                        'working': True}})
-
-                                        tz = pytz.timezone('Etc/GMT-3')
-                                        scheduler.add_job(end_job_citizen, "date",
-                                                          run_date=await add_time_min(job_info['job_time']),
-                                                          args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                                # Если нет машины
-                                else:
-                                    await bot.send_photo(message.chat.id,
-                                                         photo=InputFile(
-                                                             f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                         caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
-                                                                 f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
-                                    # SCHEDULER
-                                    res_database.job.update_one({'id': user_id},
-                                                                {'$set': {'time': await add_time_min(job_info['job_time']),
-                                                                          'working': True}})
-
-                                    tz = pytz.timezone('Etc/GMT-3')
-                                    scheduler.add_job(end_job_citizen, "date",
-                                                      run_date=await add_time_min(job_info['job_time']),
-                                                      args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                        else:  # Если не гражданин
-                            job_info = database.jobs.find_one({'name_job': user_info['job']})
-                            res_database.job.update_one({'id': user_id},
-                                                        {'$set': {'time': await add_time_min(job_info['job_time']),
-                                                                  'working': True}})
-                            tz = pytz.timezone('Etc/GMT-3')
-                            scheduler.add_job(end_job_no_citizen, "date", run_date=await add_time_min(job_info['job_time']),
-                                              args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                            arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
-                            await bot.send_photo(message.chat.id,
-                                                 photo=InputFile(
-                                                     f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                 caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
-                                                         f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
-                # если еще болеешь
-                else:
-                    await bot.send_message(message.chat.id, f'{await username(message)}, вам ещё осталось болеть {result} 🦠', parse_mode='HTML')
+                scheduler.add_job(end_disease, "date",
+                                  run_date=await add_time_min(disease_info['time']),
+                                  args=(message,), id=str(user_id), timezone=tz)
+                await bot.send_message(message.chat.id,
+                                       f'{await username(message)}, вы заболели болезнью {disease_info["disease"].lower()} на время {disease_info["time"]} минут 🦠',
+                                       parse_mode='HTML')
             else:
-                rand_num = random.randint(1, 10)
-                if rand_num == 1:  # Если заболел
+                if user_info['citizen_country'] != 'нет':  # Если гражданин
+                    job_info = database.jobs.find_one({'name_job': user_info['job']})
+                    country_info = database.countries.find_one({'country': user_info['citizen_country']})
+                    if country_info['food'] >= job_info['need_food']:  # Если в стране достаточно еды
 
-                    all_diseases = database.diseases.find()
-                    disease_info = random.choice(list(all_diseases))
+                        # Если строитель, то не работаем
+                        if user_info['job'] == 'Строитель':
+                            builder_info = database.builders_work.find_one({'id': user_id})
+                            if builder_info is not None:
+                                await message.answer(
+                                    f'{await username(message)}, сначала завершите либо покиньте стройку',
+                                    parse_mode='HTML')
+                                return
 
-                    # Добавление в бд инфы о болезни
-                    res_database.disease.insert_one({'id': user_id,
-                                                     'time': await add_time_min(disease_info['time']),
-                                                     'disease': True})
-                    tz = pytz.timezone('Etc/GMT-3')
-                    scheduler.add_job(end_disease, "date",
-                                      run_date=await add_time_min(disease_info['time']),
-                                      args=(message,), id=str(user_id), timezone=tz)
-                    await bot.send_message(message.chat.id,
-                                           f'{await username(message)}, вы заболели болезнью {disease_info["disease"].lower()} на время {disease_info["time"]} минут 🦠',
-                                           parse_mode='HTML')
-                else:
-                    if user_info['citizen_country'] != 'нет':  # Если гражданин
-                        job_info = database.jobs.find_one({'name_job': user_info['job']})
-                        country_info = database.countries.find_one({'country': user_info['citizen_country']})
-                        if country_info['food'] >= job_info['need_food']:  # Если в стране достаточно еды
-                            # Если строитель, то не работаем
-                            if user_info['job'] == 'Строитель':
-                                builder_info = database.builders_work.find_one({'id': user_id})
-                                if builder_info is not None:
-                                    await message.answer(
-                                        f'{await username(message)}, сначала завершите либо покиньте стройку',
-                                        parse_mode='HTML')
-                                    return
-                            # Снятие еды со страны за работу
-                            database.countries.update_one({'country': user_info['citizen_country']},
-                                                          {'$set': {'food': country_info['food'] - job_info['need_food']}})
-                            # Если есть машина
-                            car_info = database.users_cars.find_one({'id': user_id})
-                            arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
-                            if car_info is not None:
-                                need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
-                                if user_info['oil'] >= need_oil:
-                                    # Сжигаем топливо
-                                    database.users_cars.update_one(
-                                        {'$and': [{'user_id': user_id}, {'car': car_info["car"]}]},
-                                        {'$set': {'oil': user_info['oil'] - need_oil}})
-                                    # Вычисление времени на работу едя на машине
-                                    job_time = int(job_info['job_time'] * (car_info['save_job_time'] / 100))
-                                    await bot.send_photo(message.chat.id,
-                                                         photo=InputFile(
-                                                             f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                         caption=f'{await username(message)}, вы поехали на машине и начали работать по профессии {user_info["job"].lower()}\n'
-                                                                 f'Через {job_time} минут вы закончите!\n'
-                                                                 f'Вы потратили:\n'
-                                                                 f'🖤 -{need_oil}л', parse_mode='HTML')
-                                    # SCHEDULER
-                                    res_database.job.update_one({'id': user_id},
-                                                                {'$set': {'time': await add_time_min(job_info['job_time']),
-                                                                          'working': True}})
-                                    tz = pytz.timezone('Etc/GMT-3')
-                                    scheduler.add_job(end_job_citizen, "date",
-                                                      run_date=await add_time_min(job_time),
-                                                      args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                                # Если нет топлива
-                                else:
-                                    await bot.send_photo(message.chat.id,
-                                                         photo=InputFile(
-                                                             f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                         caption=f'{await username(message)}, в вашем {car_info["car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
-                                                                 f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
-                                    # SCHEDULER
-                                    res_database.job.update_one({'id': user_id},
-                                                                {'$set': {'time': await add_time_min(job_info['job_time']),
-                                                                          'working': True}})
-
-                                    tz = pytz.timezone('Etc/GMT-3')
-                                    scheduler.add_job(end_job_citizen, "date",
-                                                      run_date=await add_time_min(job_info['job_time']),
-                                                      args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                            # Если нет машины
+                        # Снятие еды со страны за работу
+                        database.countries.update_one({'country': user_info['citizen_country']},
+                                                      {'$set': {'food': country_info['food'] - job_info['need_food']}})
+                        # Если есть машина
+                        car_info = database.users_cars.find_one({'id': user_id})
+                        arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
+                        if car_info is not None:
+                            need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
+                            if user_info['oil'] >= need_oil:
+                                # Сжигаем топливо
+                                database.users.update_one(
+                                    {'id': user_id},
+                                    {'$set': {'oil': user_info['oil'] - need_oil}})
+                                # Вычисление времени на работу едя на машине
+                                job_time = int(job_info['job_time'] * (car_info['save_job_time'] / 100))
+                                await bot.send_photo(message.chat.id,
+                                                     photo=InputFile(
+                                                         f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
+                                                     caption=f'{await username(message)}, вы поехали на машине и начали работать по профессии {user_info["job"].lower()}\n'
+                                                             f'Через {job_time} минут вы закончите!\n'
+                                                             f'Вы потратили:\n'
+                                                             f'🖤 -{need_oil}л', parse_mode='HTML')
+                                # SCHEDULER
+                                res_database.job.update_one({'id': user_id},
+                                                            {'$set': {'time': await add_time_min(job_time),
+                                                                      'working': True}})
+                                tz = pytz.timezone('Etc/GMT-3')
+                                scheduler.add_job(end_job_citizen, "date",
+                                                  run_date=await add_time_min(job_time),
+                                                  args=(message, user_info['job']), id=str(user_id), timezone=tz)
+                            # Если нет топлива
                             else:
                                 await bot.send_photo(message.chat.id,
                                                      photo=InputFile(
                                                          f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                                     caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
-                                                             f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
+                                                     caption=f'{await username(message)}, в вашем {car_info["car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
+                                                             f'Через {job_info["job_time"]} минут вы закончите!',
+                                                     parse_mode='HTML')
                                 # SCHEDULER
                                 res_database.job.update_one({'id': user_id},
                                                             {'$set': {'time': await add_time_min(job_info['job_time']),
@@ -263,22 +123,43 @@ async def work(message: types.Message):
                                 scheduler.add_job(end_job_citizen, "date",
                                                   run_date=await add_time_min(job_info['job_time']),
                                                   args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                    else:  # Если не гражданин
-                        job_info = database.jobs.find_one({'name_job': user_info['job']})
-                        res_database.job.update_one({'id': user_id},
-                                                    {'$set': {'time': await add_time_min(job_info['job_time']),
-                                                              'working': True}})
-                        tz = pytz.timezone('Etc/GMT-3')
-                        scheduler.add_job(end_job_no_citizen, "date", run_date=await add_time_min(job_info['job_time']),
-                                          args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                        arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
-                        await bot.send_photo(message.chat.id,
-                                             photo=InputFile(
-                                                 f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                             caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
-                                                     f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
+                        # Если нет машины
+                        else:
+                            await bot.send_photo(message.chat.id,
+                                                 photo=InputFile(
+                                                     f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
+                                                 caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
+                                                         f'Через {job_info["job_time"]} минут вы закончите!',
+                                                 parse_mode='HTML')
+                            # SCHEDULER
+                            res_database.job.update_one({'id': user_id},
+                                                        {'$set': {'time': await add_time_min(job_info['job_time']),
+                                                                  'working': True}})
+
+                            tz = pytz.timezone('Etc/GMT-3')
+                            scheduler.add_job(end_job_citizen, "date",
+                                              run_date=await add_time_min(job_info['job_time']),
+                                              args=(message, user_info['job']), id=str(user_id), timezone=tz)
+                    else:
+                        await bot.send_message(message.chat.id,
+                                               f'{await username(message)}, в вашей стране недостаточно еды!')
+                else:  # Если не гражданин
+                    job_info = database.jobs.find_one({'name_job': user_info['job']})
+                    res_database.job.update_one({'id': user_id},
+                                                {'$set': {'time': await add_time_min(job_info['job_time']),
+                                                          'working': True}})
+                    tz = pytz.timezone('Etc/GMT-3')
+                    scheduler.add_job(end_job_no_citizen, "date", run_date=await add_time_min(job_info['job_time']),
+                                      args=(message, user_info['job']), id=str(user_id), timezone=tz)
+                    arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
+                    await bot.send_photo(message.chat.id,
+                                         photo=InputFile(
+                                             f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
+                                         caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
+                                                 f'Через {job_info["job_time"]} минут вы закончите!', parse_mode='HTML')
     else:
-        await bot.send_message(message.chat.id,f'{await username(message)}, вы нигде не работаете!', parse_mode='HTML')
+        await bot.send_message(message.chat.id, f'{await username(message)}, вы нигде не работаете!', parse_mode='HTML')
+
 
 # /jobs Устроится на работу
 async def getjob(message: types.Message):
@@ -573,11 +454,14 @@ async def end_job_citizen(message: types.Message, job):
                                f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
                                parse_mode='HTML')
 
+
 # Окончание болезни
 async def end_disease(message: types.Message):
     user_id = message.from_user.id
     res_database.disease.delete_one({'id': user_id})
     await bot.send_message(message.chat.id, f'{await username(message)}, вы выздоровили!', parse_mode='HTML')
+
+
 def register_handlers_countries(dp: Dispatcher):
     dp.register_message_handler(work, content_types='text',
                                 text=['/work', 'работа', 'работать', 'Работа', 'Работать', 'робота', 'Робота'])

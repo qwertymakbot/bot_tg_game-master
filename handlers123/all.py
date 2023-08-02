@@ -26,8 +26,7 @@ async def all(callback: types.CallbackQuery):
         user_info = database.users.find_one({'id': user_id})
         car_info = database.cars.find_one({'name_car': data_callback})
         if car_info['count'] == 0:
-            await bot.send_message(callback.message.chat.id,
-                                   text=f'{await username(callback)}, {car_info["name_car"]} нет в наличии!', parse_mode='HTML')
+            await callback.message.edit_text(f'{await username(callback)}, {car_info["name_car"]} нет в наличии!', parse_mode='HTML')
             return
         if user_info['cash'] >= car_info['cost']:
             count_user_car = database.users_cars.find_one({'$and': [{'id': user_id}, {'car': car_info['name_car']}]})

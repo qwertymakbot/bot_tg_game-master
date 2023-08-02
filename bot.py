@@ -31,7 +31,6 @@ from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDic
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from background import keep_alive
 t = Translator()
 openai.api_key = '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'
 
@@ -366,6 +365,32 @@ async def isSubsc(message):
         await bot.send_message(message.chat.id,
                                f'{await username(message)}, чтобы получить доступ к команде, вы должны состоять в моем канале @makbotinfo', parse_mode='HTML')
 
+class Cong(StatesGroup):
+    texta = State()
+
+
+# /senda Рассылка всем
+@dp.message_handler(commands='senda')
+async def sendl(message):
+    await message.delete()
+    await Cong.texta.set()
+    await bot.send_message(message.chat.id, f'Введите текст для рассылки')
+
+
+@dp.message_handler(content_types=['text'], state=Cong.texta)
+async def text(message, state: FSMContext):
+    txt = message.text
+    users = list(database.users.find())
+    num = 0
+    await state.finish()
+    for user in users:
+        try:
+            await bot.send_message(user['id'], txt)
+            num += 1
+        except:
+            pass
+    await message.reply(f'Текст разослан {num} раз')
+
 @dp.message_handler(commands='start')
 async def start(message: types.Message):
     if message.get_args():
@@ -596,7 +621,7 @@ async def me(message):
                        fill='#0D0D0D')
     # дата
     tz = pytz.timezone('Etc/GMT-3')
-    time_now = f'{datetime.now(tz=tz).day}.{f"0{datetime.now(tz=tz).month}" if len(str(datetime.now(tz=tz).month)) == 1 else datetime.now(tz=tz).month}.{datetime.now(tz=tz).year}\n{datetime.now(tz=tz).hour}:{f"0{datetime.now(tz=tz).minute}" if len(str(datetime.now(tz=tz).minute)) == 1 else datetime.now(tz=tz).minute}'
+    time_now = f'{f"0{datetime.now(tz=tz).date}" if len(str(datetime.now(tz=tz).date)) == 1 else datetime.now(tz=tz).date}.{f"0{datetime.now(tz=tz).month}" if len(str(datetime.now(tz=tz).month)) == 1 else datetime.now(tz=tz).month}.{datetime.now(tz=tz).year}\n{datetime.now(tz=tz).hour}:{f"0{datetime.now(tz=tz).minute}" if len(str(datetime.now(tz=tz).minute)) == 1 else datetime.now(tz=tz).minute}'
     font_time = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Arimo-SemiBold.ttf', size=24)
     draw_text.text((820, 446),
                    time_now,
@@ -1151,7 +1176,6 @@ scheduler = AsyncIOScheduler()
 scheduler.start()
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    keep_alive()
     # Регистрация хендлеров
     from handlers123 import job, bussiness, inline_cancel_bus, all, bonus, education
     from handlers123.shop import inline_shop
