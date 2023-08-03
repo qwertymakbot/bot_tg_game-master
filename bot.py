@@ -31,6 +31,9 @@ from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDic
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+from background import keep_alive
+
+
 t = Translator()
 openai.api_key = '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'
 
@@ -1175,6 +1178,7 @@ async def start_vuz(user_id, name_job):
 scheduler = AsyncIOScheduler()
 scheduler.start()
 if __name__ == '__main__':
+    keep_alive()
     logging.basicConfig(level=logging.INFO)
     # Регистрация хендлеров
     from handlers123 import job, bussiness, inline_cancel_bus, all, bonus, education

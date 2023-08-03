@@ -1454,7 +1454,12 @@ async def all(callback: types.CallbackQuery):
             await callback.message.delete()
             await big_case(callback=callback)
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼КЕЙСЫ🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
+    '''marketplace'''
+    if 'marketplace_' in data_callback:
+        await callback.answer(text='ждите, скоро будет')
     await bot.answer_callback_query(callback.id)
+
+
 
 
 

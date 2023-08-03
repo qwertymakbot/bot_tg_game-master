@@ -11,6 +11,7 @@ async def cars(callback: types.CallbackQuery):
         for i in range(0, len(cars_list)):
             car = InlineKeyboardButton(text=f'{cars_list[i]["name_car"]} Цена: {cars_list[i]["cost"]}$',
                                        callback_data=f'shop_{cars_list[i]["name_car"]}')
+        
             key.add(car)
         await bot.send_message(callback.message.chat.id,
                                text=f'{await username(callback)}, вам доступны следующие машины!', reply_markup=key,
@@ -31,7 +32,8 @@ async def shop(message):
         # Категории в магазине
         cars = types.InlineKeyboardButton(text='Машины 🚗', callback_data='Магазин_машины')
         cases = types.InlineKeyboardButton(text='Кейсы 🎁', callback_data='Кейсы')
-        key.add(cars, cases)
+        marketplace = InlineKeyboardButton(text='Маркетплейс', callback_data='marketplace_')
+        key.add(cars, cases, marketplace)
 
         await bot.send_message(message.chat.id,
                                text=f'@{message.from_user.username}, выберите категорию!', reply_markup=key)
