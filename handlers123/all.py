@@ -26,7 +26,8 @@ async def all(callback: types.CallbackQuery):
         user_info = database.users.find_one({'id': user_id})
         car_info = database.cars.find_one({'name_car': data_callback})
         if car_info['count'] == 0:
-            await callback.message.edit_text(f'{await username(callback)}, {car_info["name_car"]} нет в наличии!', parse_mode='HTML')
+            await callback.message.edit_text(f'{await username(callback)}, {car_info["name_car"]} нет в наличии!',
+                                             parse_mode='HTML')
             return
         if user_info['cash'] >= car_info['cost']:
             count_user_car = database.users_cars.find_one({'$and': [{'id': user_id}, {'car': car_info['name_car']}]})
@@ -48,7 +49,8 @@ async def all(callback: types.CallbackQuery):
                 await bot.send_photo(callback.message.chat.id,
                                      caption=f'{await username(callback)}, успешно приобрел машину!',
                                      photo=InputFile(
-                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'), parse_mode='HTML')
+                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'),
+                                     parse_mode='HTML')
             else:
                 # Добавление машины пользователю
                 database.users_cars.update_one({'id': user_id, 'car': car_info['name_car']},
@@ -64,7 +66,8 @@ async def all(callback: types.CallbackQuery):
                 await bot.send_photo(callback.message.chat.id,
                                      caption=f'{await username(callback)}, успешно приобрел машину!',
                                      photo=InputFile(
-                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'), parse_mode='HTML')
+                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'),
+                                     parse_mode='HTML')
 
         else:
             await bot.send_message(callback.message.chat.id,
@@ -1434,6 +1437,7 @@ async def all(callback: types.CallbackQuery):
             await callback.message.edit_text(f'{await username(callback)}, вам нужно уволиться\n'
                                              f'❗️ Чтобы уволиться напишите - Уволиться', parse_mode='HTML')
     """🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼РАБОТА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼"""
+    """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽КЕЙСЫ🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'Кейсы' in data_callback:
         case_keyboard = InlineKeyboardMarkup(row_width=1)
         buy_little_case_btn = InlineKeyboardButton(text='Маленький кейс за 10000$', callback_data='Кейс_маленький')
@@ -1441,7 +1445,6 @@ async def all(callback: types.CallbackQuery):
         buy_big_case_btn = InlineKeyboardButton(text='Большой кейс за 150000$', callback_data='Кейс_большой')
         case_keyboard.add(buy_little_case_btn, buy_middle_case_btn, buy_big_case_btn)
         await callback.message.edit_text(text='Доступны следующие кейсы:', reply_markup=case_keyboard)
-
 
     if 'Кейс_' in data_callback:
         if 'Кейс_маленький' in data_callback:
@@ -1457,18 +1460,122 @@ async def all(callback: types.CallbackQuery):
     '''marketplace'''
     if 'marketplace_' in data_callback:
         await callback.answer(text='ждите, скоро будет')
+    """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПРОДАЖА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
+    if 'sell_bus_' in data_callback:
+        user_id, cost = data_callback.replace('sell_bus_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            bus_data = database.users_bus.find_one({'boss': callback.from_user.id})
+            await callback.message.edit_text(
+                f'{await username(callback)}, вы продали бизнес за {round(float(cost), 0)} $:\n'
+                f'™️ Название: {bus_data["name"]}\n'
+                f'🛠 Что производит: {bus_data["product"]}\n', parse_mode='HTML')
+            # начисление денег
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            database.users.update_one({'id': callback.from_user.id},
+                                      {'$set': {user_info['cost'] + round(float(cost), 0)}})
+            # удаление бизнеса
+            database.users_bus.delete_one({'boss': callback.from_user.id})
+            # удаление рабочих
+            database.autocreater_work.delete({'boss': callback.from_user.id})
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'cancel_' in data_callback:
+        id_user = data_callback.split('_')[2]
+        if str(callback.from_user.id)[-3::] == id_user:
+            await callback.message.delete()
+    '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПРОДАЖА БИЗНЕСА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
+    """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПОКУПКА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
+    if 'buybus_naz_' in data_callback:
+        user_id, page = data_callback.replace('buybus_naz_','').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            if int(page) != 0:
+                user_info = database.users.find_one({'id': callback.from_user.id})
+                key = InlineKeyboardMarkup(row_width=3)
+                but_nazad = InlineKeyboardButton('◀️', callback_data=f'buybus_naz_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'buybus_vper_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_buy = InlineKeyboardButton('Купить 💲',
+                                               callback_data=f'buybus_buy_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_otmena = InlineKeyboardButton('Отмена ❌',
+                                                  callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
+                await callback.message.edit_text(f'Страна производства: {bus_data[int(page) - 1]["country"]}\n'
+                                                        f'Что производит: {bus_data[int(page) - 1]["product"]}\n'
+                                                        f'🖤 Топлива: {bus_data[int(page) - 1]["oil"]} л\n'
+                                                        f'🍔 Еда: {bus_data[int(page) - 1]["food"]} кг\n'
+                                                        f'💵 Цена: {bus_data[int(page) - 1]["cost"]} $\n\n'
+                                                        f'Страница {int(page)}/{len(bus_data)}', reply_markup=key)
+            else:
+                await callback.answer('Это последняя страница')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'buybus_vper_' in data_callback:
+        user_id, page = data_callback.replace('buybus_vper_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
+            if int(page) + 1 != len(bus_data):
+                key = InlineKeyboardMarkup(row_width=3)
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'buybus_naz_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'buybus_vper_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_buy = InlineKeyboardButton('Купить 💲',
+                                               callback_data=f'buybus_buy_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_otmena = InlineKeyboardButton('Отмена ❌',
+                                                  callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+
+                await callback.message.edit_text(f'Страна производства: {bus_data[int(page) + 1]["country"]}\n'
+                                                 f'Что производит: {bus_data[int(page) + 1]["product"]}\n'
+                                                 f'🖤 Топлива: {bus_data[int(page) + 1]["oil"]} л\n'
+                                                 f'🍔 Еда: {bus_data[int(page) + 1]["food"]} кг\n'
+                                                 f'💵 Цена: {bus_data[int(page) + 1]["cost"]} $\n\n'
+                                                 f'Страница {int(page) + 2}/{len(bus_data)}', reply_markup=key)
+            else:
+                await callback.answer('Это последняя страница')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'buybus_buy_' in data_callback:
+        user_id, page = data_callback.replace('buybus_buy_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
+            # Проверка ресурсов
+            if user_info['cash'] < bus_data[int(page)]['cost']:
+                await callback.message.edit_text(f'{await username(callback)}, вам не хватает {bus_data[int(page)]["cost"] - user_info["cash"]} $', parse_mode='HTML')
+                return
+            if user_info['oil'] < bus_data[int(page)]['oil']:
+                await callback.message.edit_text(
+                    f'{await username(callback)}, вам не хватает {bus_data[int(page)]["oil"] - user_info["oil"]} 🖤', parse_mode='HTML')
+                return
+            if user_info['food'] < bus_data[int(page)]['food']:
+                await callback.message.edit_text(
+                    f'{await username(callback)}, вам не хватает {bus_data[int(page)]["food"] - user_info["food"]} 🍔', parse_mode='HTML')
+                return
+            # Запись страны в user_bus
+            database.users_bus.insert_one({'boss': callback.from_user.id,
+                                           'country': bus_data[int(page)]['country'],
+                                           'name': bus_data[int(page)]['name'],
+                                           'product': bus_data[int(page)]['product'],
+                                           'need_builder': bus_data[int(page)]['need_builder'],
+                                           'oil': bus_data[int(page)]['oil'],
+                                           'food': bus_data[int(page)]['food'],
+                                           'cost': bus_data[int(page)]['cost'],
+                                           'work_place': bus_data[int(page)]['work_place'],
+                                           'time_to_create': bus_data[int(page)]['time_to_create'],
+                                           'status': 'buy'}
+                                          )
+            await callback.message.edit_text(f'{await username(callback)}, вы успешно приобрели бизнес {bus_data[int(page)]["name"]} {bus_data[int(page)]["product"]}', parse_mode='HTML')
+
+        else:
+            await callback.answer('Это предназначено не вам!')
+    '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПОКУПКА БИЗНЕСА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     await bot.answer_callback_query(callback.id)
-
-
-
-
-
-
-
-
 
 
 def reg_all(dp: Dispatcher):
     dp.register_callback_query_handler(otmena, text='otmena')
     dp.register_callback_query_handler(all)
-

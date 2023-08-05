@@ -31,7 +31,8 @@ from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDic
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from background import keep_alive
+from filters import antiflood
+#from background import keep_alive
 
 
 t = Translator()
@@ -72,7 +73,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Вызывается при старте
 async def on_startup(_):
-
+    return
     data_vuz = list(res_database.vuz.find())
     for info_vuz in data_vuz:
         # Получение переменных с строки
@@ -624,7 +625,7 @@ async def me(message):
                        fill='#0D0D0D')
     # дата
     tz = pytz.timezone('Etc/GMT-3')
-    time_now = f'{f"0{datetime.now(tz=tz).date}" if len(str(datetime.now(tz=tz).date)) == 1 else datetime.now(tz=tz).date}.{f"0{datetime.now(tz=tz).month}" if len(str(datetime.now(tz=tz).month)) == 1 else datetime.now(tz=tz).month}.{datetime.now(tz=tz).year}\n{datetime.now(tz=tz).hour}:{f"0{datetime.now(tz=tz).minute}" if len(str(datetime.now(tz=tz).minute)) == 1 else datetime.now(tz=tz).minute}'
+    time_now = f'{f"0{datetime.now(tz=tz).day}" if len(str(datetime.now(tz=tz).day)) == 1 else datetime.now(tz=tz).day}.{f"0{datetime.now(tz=tz).month}" if len(str(datetime.now(tz=tz).month)) == 1 else datetime.now(tz=tz).month}.{datetime.now(tz=tz).year}\n{datetime.now(tz=tz).hour}:{f"0{datetime.now(tz=tz).minute}" if len(str(datetime.now(tz=tz).minute)) == 1 else datetime.now(tz=tz).minute}'
     font_time = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Arimo-SemiBold.ttf', size=24)
     draw_text.text((820, 446),
                    time_now,
@@ -1178,7 +1179,7 @@ async def start_vuz(user_id, name_job):
 scheduler = AsyncIOScheduler()
 scheduler.start()
 if __name__ == '__main__':
-    keep_alive()
+#    keep_alive()
     logging.basicConfig(level=logging.INFO)
     # Регистрация хендлеров
     from handlers123 import job, bussiness, inline_cancel_bus, all, bonus, education
@@ -1208,7 +1209,8 @@ if __name__ == '__main__':
     joke.register_handlers_countries(dp)
     # bonus
     bonus.register_handlers_bonus(dp)
-
+    # antiflood
+    antiflood.setup_antiflood(dp)
     # all
     all.reg_all(dp)
 

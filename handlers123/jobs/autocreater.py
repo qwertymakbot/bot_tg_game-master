@@ -14,8 +14,6 @@ async def leave_creater(message: types.Message):
         if autocreater_info is not None:  # Если устроен на предприятие
             # Удаление из док-та
             database.autocreater_work.delete_one({'creater': message.from_user.id})
-            # Удаление из bus_workplace
-            database.bus_workplace.delete_one({'creater': message.from_user.id})
             await bot.send_message(message.chat.id, f'{await username(message)}, вы успешно уволились с предприятия!', parse_mode='HTML')
         else:
             await bot.send_message(message.chat.id, f'{await username(message)}, вы не устроены на предприятие!', parse_mode='HTML')
