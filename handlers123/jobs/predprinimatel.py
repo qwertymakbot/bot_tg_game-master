@@ -61,6 +61,10 @@ async def build_bus(message: types.Message):
             await bot.send_message(message.chat.id, f'{await username(message)}, для начала нужно приобрести бизнес!',
                                    parse_mode='HTML')
             return
+        if users_bus['bpay'] == 0:
+            await bot.send_message(message.chat.id, f'{await username(message)}, для начала вам нужно установить плату строителям за работу!\n'
+                                                    f'Установить плату можно только 1 раз!', parse_mode='HTML')
+            return
         if users_bus['status'] == 'buy':
             # Изменение статуса бизнеса
             database.users_bus.update_one({'boss': message.from_user.id}, {'$set': {'status': 'need_builders'}})
@@ -75,13 +79,13 @@ async def build_bus(message: types.Message):
                 tz = pytz.timezone('Etc/GMT-3')
                 scheduler.add_job(end_build_bus, "date",
                                   run_date=await add_time_min(1440),
-                                  args=(message.from_user.id,), timezone=tz)
+                                  args=message.from_user.id, id=f'{message.from_user.id}_build', timezone=tz)
                 await bot.send_message(message.chat.id,
                                        f'{await username(message)}, начал строительство объекта {users_bus["name"]} {users_bus["product"]}\n'
-                                       f'❗️ Стройка закончится через 24 часа ❗️')
+                                       f'❗️ Стройка закончится через 24 часа ❗️', parse_mode='HTML')
             else:
                 await bot.send_message(message.chat.id,
-                                       f'{await username(message)}, у вас недостаточно строителей, нужно ещё {users_bus["need_builder"] - len(builders)}')
+                                       f'{await username(message)}, у вас недостаточно строителей, нужно ещё {users_bus["need_builder"] - len(builders)}', parse_mode='HTML')
         if users_bus['status'] == 'need_builders':
             # Получение кол-ва строителей на стройке
             builders = list(database.builders_work.find({'boss': message.from_user.id}))
@@ -94,13 +98,13 @@ async def build_bus(message: types.Message):
                 tz = pytz.timezone('Etc/GMT-3')
                 scheduler.add_job(end_build_bus, "date",
                                   run_date=await add_time_min(1440),
-                                  args=(message.from_user.id,), timezone=tz)
+                                  args=message.from_user.id, id=f'{message.from_user.id}_build', timezone=tz)
                 await bot.send_message(message.chat.id,
                                        f'{await username(message)}, начал строительство объекта {users_bus["name"]} {users_bus["product"]}\n'
-                                       f'❗️ Стройка закончится через 24 часа ❗️')
+                                       f'❗️ Стройка закончится через 24 часа ❗️', parse_mode='HTML')
             else:
                 await bot.send_message(message.chat.id,
-                                       f'{await username(message)}, у вас недостаточно строителей, нужно ещё {users_bus["need_builder"] - len(builders)}')
+                                       f'{await username(message)}, у вас недостаточно строителей, нужно ещё {users_bus["need_builder"] - len(builders)}', parse_mode='HTML')
         if users_bus["status"] == 'building':
             res_building = res_database.build_bus.find_one({'boss': message.from_user.id})
             # Получение переменных с строки
@@ -114,10 +118,10 @@ async def build_bus(message: types.Message):
                                          datetime.datetime.now(tz=tz).minute, datetime.datetime.now(tz=tz).second)
             result = time_job - time_now
             await bot.send_message(message.chat.id,
-                                   f'{await username(message)}, вы уже работаете, вам ещё осталось {result}',
+                                   f'{await username(message)}, вы уже строите, вам ещё осталось {result}',
                                    parse_mode='HTML')
         else:
-            await bot.send_message(message.chat.id, f'{await username(message)}, вы уже построили свой бизнес!')
+            await bot.send_message(message.chat.id, f'{await username(message)}, вы уже построили свой бизнес!', parse_mode='HTML')
     else:
         await bot.send_message(
             f'{await username_2(message.from_user.id, message.from_user.first_name)}, данная команда доступна только Предпринимателю',
@@ -125,82 +129,52 @@ async def build_bus(message: types.Message):
 
 
 # /cancel_bus Отмена строительства
-async def cancel_bus(message):
+async def cancel_bus(message: types.Message):
     await check_user(message)
     user_info = database.users.find_one({'id': message.from_user.id})
     if user_info['job'] == 'Предприниматель':
-        try:
-            path = os.getcwd()
-            with open(f'{path}/game/build_bus/{message.from_user.id}.json', 'r', encoding='utf-8') as f:
-                build_data = json.load(f)
-                isbuilding = build_data['isbuilding']
-                f.close()
-                if not isbuilding:
-                    # Запись данных о бизнесе
-                    data = {'oil': build_data['oil'],
-                            'food': build_data['food'],
-                            'cost': build_data['cost'],
-                            'builders': build_data['builders'],
-                            'builder_pay': build_data['builder_pay']}
-                    path = os.getcwd()
-                    with open(f'{path}/game/cancel_bus/{message.from_user.id}.json', 'w', encoding='utf-8') as f:
-                        json.dump(data, f)
-                        f.close()
-                    # Создание кнопок подтверждения
-                    key = types.InlineKeyboardMarkup()
-                    but_yes = types.InlineKeyboardButton(text='Согласиться', callback_data='Стройка_отмена_да')
-                    but_no = types.InlineKeyboardButton(text='Отказаться', callback_data='Стройка_отмена_нет')
-                    key.add(but_no, but_yes)
-                    await bot.send_message(message.chat.id,
-                                           text=f'{await username(message)}, вы действительно хотите прервать стройку?\n'
-                                                f'❗️ Вам буду возвращены лишь 50% ресурсов, а также зарплата строителей будет оплачена на 50%',
-                                           reply_markup=key, parse_mode='Markdown')
-                else:
-                    await message.answer(f'{await username(message)}, во время стройки нельзя отменить её!',
-                                         parse_mode='Markdown')
-        except:
-            await message.answer(f'{await username(message)}, в данный момент нет строек!', parse_mode='Markdown')
+        bus_info = database.users_bus.find_one({'boss': message.from_user.id})
+        if bus_info['status'] == 'building':
+            key = InlineKeyboardMarkup()
+            but_yes = InlineKeyboardButton('Да ✅', callback_data=f'cancel_bus_yes_{str(message.from_user.id)[-3::]}')
+            but_no = InlineKeyboardButton('Нет ❌', callback_data=f'cancel_bus_no_{str(message.from_user.id)[-3::]}')
+            key.add(but_yes, but_no)
+            await bot.send_message(message.chat.id, f'{await username(message)}, вы действительно хотите отменить строительство вашего бизнеса?\n'
+                                                    f'{bus_info["name"]} {bus_info["product"]}\n'
+                                                    f'❗️ Все ресурсы будут возвращены на 50%, также выдана зарплата '
+                                                    f'строителям на 50%',reply_markup=key, parse_mode='HTML')
+        else:
+            await bot.send_message(message.chat.id, f'{await username(message)}, ваш бизнес не строится!', parse_mode='HTML')
     else:
-        await message.answer(f'{await username(message)}, данная команда доступна только Предпринимателю',
-                             parse_mode='Markdown')
+        await bot.send_message(message.chat.id,f'{await username(message)}, данная команда доступна только Предпринимателю',
+                             parse_mode='HTML')
 
 
 # /bpay Установление платы каждому строителю
 async def bpay(message: types.Message):
     await check_user(message)
-    pay = message.get_args().split()
-    arr = next(os.walk(f'{os.getcwd()}/game/build_bus'))[2]
-    for i in arr:
-        build_data_json = str(i).replace('.json', '')
-        if message.from_user.id == int(build_data_json):
-            with open(f'{os.getcwd()}/game/build_bus/{i}', 'r', encoding='utf-8') as f:
-                build_data = json.load(f)
-                isbuilding = build_data['isbuilding']
-                if len(pay) == 1 and isbuilding == False:
-                    try:
-                        user_info = database.users.find_one({'id': message.from_user.id})
-                        pay = int(pay[0])
-                        if user_info['cash'] < pay * build_data['need_builder']:
-                            await message.answer(f'{await username(message)}, у вас недостаточно средств!',
-                                                 parse_mode='Markdown')
-                            return
-                        if build_data['builder_pay'] == 0:
-                            with open(f'./game/build_bus/{i}', 'w', encoding='utf-8') as f:
-                                build_data['builder_pay'] = pay
-                                json.dump(build_data, f)
-                                await message.answer(
-                                    f'{await username(message)}, каждый строитель по окончанию строительства получит {pay}$\n'
-                                    f'❗️Теперь вам нужно найти строителей чтобы начать стройку (команда для строителей - /build)\n'
-                                    f'❗️Как только наберется {build_data["need_builder"]} строителей, напишите /build_bus',
-                                    parse_mode='Markdown')
-                                # оповещение босса о том что строители есть, создание команды для начала стройки
-                        else:
-                            await message.answer(
-                                f'{await username(message)}, цену можно устанавливать только один раз',
-                                parse_mode='Markdown')
-                    except:
-                        await message.answer(f'{await username(message)}, пример ввода: /bpay 100',
-                                             parse_mode='Markdown')
+    try:
+        pay = int(message.get_args().split()[0])
+        user_info = database.users.find_one({'id': message.from_user.id})
+        if user_info['job'] == 'Предприниматель':
+            bus_info = database.users_bus.find_one({'boss': message.from_user.id})
+            if bus_info['bpay'] == 0:
+                if user_info['cash'] >= pay * bus_info['need_builder']:
+                    database.users.update_one({'id': message.from_user.id}, {'$set': {'cash': user_info['cash'] - pay * bus_info['need_builder']}})
+                    database.users_bus.update_one({'boss': message.from_user.id}, {'$set': {'bpay': pay}})
+                    await bot.send_message(message.chat.id, f'{await username(message)}, вы успешно установили плату строителям за работу в размере {pay} $', parse_mode='HTML')
+            else:
+                await bot.send_message(message.chat.id,
+                                       f'{await username(message)}, плату за строительство можно установить только 1 раз',
+                                       parse_mode='HTML')
+        else:
+            await bot.send_message(message.chat.id,
+                                   f'{await username(message)}, данная команда доступна только Предпринимателю',
+                                   parse_mode='HTML')
+    except:
+        await bot.send_message(message.chat.id, f'{await username(message)}, вы некорректно ввели плату (/bpay 100)',
+                             parse_mode='HTML')
+
 
 
 # /buybus Покупка бизнеса
@@ -208,7 +182,7 @@ async def buybus(message: types.Message):
     await check_user(message)
     user_info = database.users.find_one({'id': message.from_user.id})
     if database.users_bus.find_one({'boss': message.from_user.id}) is not None:
-        await bot.send_message(message.chat.id, f'{await username(message)}, у вас уже есть бизнес!')
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас уже есть бизнес!', parse_mode='HTML')
         return
     if user_info['citizen_country'] != 'нет':
         key = InlineKeyboardMarkup(row_width=3)
@@ -226,20 +200,30 @@ async def buybus(message: types.Message):
                                                 f'Страница 1/{len(bus_data)}', reply_markup=key)
     else:
         await bot.send_message(message.chat.id,
-                               f'{await username(message)}, для начала вам нужно стать гражданином страны!')
+                               f'{await username(message)}, для начала вам нужно стать гражданином страны!', parse_mode='HTML')
 
 
 async def end_build_bus(user_id):
-    user_info = database.users.find_one({'id': user_id})
+    boss_info = database.users.find_one({'id': user_id})
     builders_info = list(database.builders_work.find({'boss': user_id}))
     bus_info = database.users_bus.find_one({'boss': user_id})
     # Изменение статуса стройки
     database.users_bus.update_one({'boss': user_id}, {'$set': {'status': 'work'}})
     # Выдача денег строителям\расформирование их
     for builder in builders_info:
-        ...
+        builder_info = database.users.find_one({'id': builder['builder']})
+        job_info = database.jobs.find_one({'name_job': builder_info['job']})
+        database.users.update_one({'id': builders_info['builder']}, {'$set': {'cash': builder_info['cash'] + bus_info['bpay'],
+                                                                              'exp': builder_info['exp'] + job_info['exp_for_job']}})
+        database.builders_work.delete_one({'builder': builder['builder']})
+
+        await bot.send_message(builder['builder'], f'{await username_2(builder_info["id"], builders_info["firstname"])}, вы получили вознаграждение за стройку объекта {bus_info["name"]} {bus_info["product"]}\n'
+                                                   f'💵 +{bus_info["bpay"]}\n'
+                                                   f'🏵 +{job_info["exp_for_job"]}', parse_mode='HTML')
+    res_database.build_bus.delete_one({'boss': user_id})
+
     await bot.send_message(user_id,
-                           f'{await username_2(user_id, user_info["firstname"])}, ваш бизнес {bus_info["name"]} {bus_info["product"]} завершил стройку!')
+                           f'{await username_2(user_id, boss_info["firstname"])}, ваш бизнес {bus_info["name"]} {bus_info["product"]} завершил стройку!', parse_mode='HTML')
 
 
 def register_handlers_predprinimatel(dp: Dispatcher):

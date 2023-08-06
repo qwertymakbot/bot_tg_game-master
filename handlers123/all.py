@@ -1566,13 +1566,51 @@ async def all(callback: types.CallbackQuery):
                                            'cost': bus_data[int(page)]['cost'],
                                            'work_place': bus_data[int(page)]['work_place'],
                                            'time_to_create': bus_data[int(page)]['time_to_create'],
-                                           'status': 'buy'}
+                                           'status': 'buy',
+                                           'bpay:': 0}
                                           )
             await callback.message.edit_text(f'{await username(callback)}, вы успешно приобрели бизнес {bus_data[int(page)]["name"]} {bus_data[int(page)]["product"]}', parse_mode='HTML')
 
         else:
             await callback.answer('Это предназначено не вам!')
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПОКУПКА БИЗНЕСА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
+    """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ОТМЕНА СТРОИТЕЛЬСТВА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
+    if 'cancel_bus_yes_' in data_callback:
+        user_id = data_callback.replace('cancel_bus_yes_', '').split('_')
+        if user_id == str(callback.from_user.id)[-3::]:
+            bus_info = database.users_bus.find_one({'boss': callback.from_user.id})
+            boss_info = database.users.find_one({'id': callback.from_user.id})
+            database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': boss_info['cash'] + round(float(bus_info["bpay"] * 0.5)),
+                                                                               'oil': boss_info['oil']+ bus_info['oil'] * 0.5,
+                                                                               'food': boss_info['food'] + bus_info['food'] * 0.5}})
+            builders_info = list(database.builders_work.find({'boss': callback.from_user.id}))
+            # Выдача денег строителям\расформирование их
+            for builder in builders_info:
+                builder_info = database.users.find_one({'id': builder['builder']})
+                job_info = database.jobs.find_one({'name_job': builder_info['job']})
+                database.users.update_one({'id': builders_info['builder']},
+                                          {'$set': {'cash': builder_info['cash'] + round(float(bus_info["bpay"] * 0.5)),
+                                                    'exp': builder_info['exp'] + job_info['exp_for_job']}})
+                database.builders_work.delete_one({'builder': builder['builder']})
+                await bot.send_message(builder['builder'],
+                                       f'{await username_2(builder_info["id"], builders_info["firstname"])}, вы получили вознаграждение за стройку объекта {bus_info["name"]} {bus_info["product"]}\n'
+                                       f'❗️ Стройка была прервана работодателем\n'
+                                       f'💵 +{round(float(bus_info["bpay"] * 0.5))}\n'
+                                       f'🏵 +{job_info["exp_for_job"]}', parse_mode='HTML')
+            res_database.build_bus.delete_one({'boss': callback.from_user.id})
+            scheduler.remove_job(f'{callback.from_user.id}_build')
+            database.users_bus.delete_one({'boss': callback.from_user.id})
+            await callback.message.edit_text(f'{await username(callback)}, вы успешно прервали стройку!\n'
+                                             f'❗️ Все средства были вернуты на 50%', parse_mode='HTML')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'cancel_bus_no_' in data_callback:
+        user_id = data_callback.replace('cancel_bus_yes_', '').split('_')
+        if user_id == str(callback.from_user.id)[-3::]:
+            await callback.message.delete()
+        else:
+            await callback.answer('Это предназначено не вам!')
+    '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ОТМЕНА СТРОИТЕЛЬСТВА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     await bot.answer_callback_query(callback.id)
 
 
