@@ -1497,7 +1497,7 @@ async def all(callback: types.CallbackQuery):
                 but_buy = InlineKeyboardButton('Купить 💲',
                                                callback_data=f'buybus_buy_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
                 but_otmena = InlineKeyboardButton('Отмена ❌',
-                                                  callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                                                  callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}')
                 key.add(but_nazad, but_buy, but_vpered, but_otmena)
                 bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
                 await callback.message.edit_text(f'Страна производства: {bus_data[int(page) - 1]["country"]}\n'
@@ -1524,7 +1524,7 @@ async def all(callback: types.CallbackQuery):
                 but_buy = InlineKeyboardButton('Купить 💲',
                                                callback_data=f'buybus_buy_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
                 but_otmena = InlineKeyboardButton('Отмена ❌',
-                                                  callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                                                  callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}')
                 key.add(but_nazad, but_buy, but_vpered, but_otmena)
 
                 await callback.message.edit_text(f'Страна производства: {bus_data[int(page) + 1]["country"]}\n'
@@ -1573,6 +1573,12 @@ async def all(callback: types.CallbackQuery):
 
         else:
             await callback.answer('Это предназначено не вам!')
+    if 'buybus_otm_' in data_callback:
+        user_id = data_callback.replace('buybus_otm_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            await callback.message.delete()
+        else:
+            await callback.answer('Это предназначено не вам!')
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПОКУПКА БИЗНЕСА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ОТМЕНА СТРОИТЕЛЬСТВА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'cancel_bus_yes_' in data_callback:
@@ -1611,6 +1617,95 @@ async def all(callback: types.CallbackQuery):
         else:
             await callback.answer('Это предназначено не вам!')
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ОТМЕНА СТРОИТЕЛЬСТВА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
+    """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПОИСК СТРОЙКИ ДЛЯ СТРОИТЕЛЯ🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
+    if 'build_naz_' in data_callback:
+        user_id, page = data_callback.replace('build_naz_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            if int(page) != 0:
+                user_info = database.users.find_one({'id': callback.from_user.id})
+                key = InlineKeyboardMarkup(row_width=3)
+                but_nazad = InlineKeyboardButton('◀️', callback_data=f'build_naz_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_vpered = InlineKeyboardButton('▶️', callback_data=f'build_vper_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_ustroitsya = InlineKeyboardButton('Устроиться ✅',
+                                                      callback_data=f'build_ustr_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_otmena = InlineKeyboardButton('Отмена ❌',
+                                                  callback_data=f'build_otm_{str(callback.from_user.id)[-3::]}')
+                key.add(but_nazad, but_ustroitsya, but_vpered, but_otmena)
+                all_building = list(database.users_bus.find({'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
+                all_builders = list(database.builders_work.find({'boss': all_building[int(page) - 1]['boss']}))
+                await callback.message.edit_text('Бизнесы в режиме ожидания:'
+                                       f'{all_building[int(page) - 1]["name"]} {all_building[int(page) - 1]["product"]}\n'
+                                       f'Плата за стройку: {all_building[int(page) - 1]["bpay"]}\n'
+                                                 f'Строителей на объекте: {len(all_builders)} из {all_building[int(page) - 1]["need_builder"]}\n\n'
+                                       f'Страница {int(page)}/{len(all_building)}', reply_markup=key)
+            else:
+                await callback.answer('Это последняя страница')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'build_vper_' in data_callback:
+        user_id, page = data_callback.replace('build_vper_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            all_building = list(database.users_bus.find({'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
+            if int(page) + 1 != len(all_building):
+                key = InlineKeyboardMarkup(row_width=3)
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'build_naz_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'build_vper_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_ustroitsya = InlineKeyboardButton('Устроиться ✅',
+                                                      callback_data=f'build_ustr_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_otmena = InlineKeyboardButton('Отмена ❌',
+                                                  callback_data=f'build_otm_{str(callback.from_user.id)[-3::]}')
+                key.add(but_nazad, but_ustroitsya, but_vpered, but_otmena)
+                all_builders = list(database.builders_work.find({'boss': all_building[int(page) + 1]['boss']}))
+                await callback.message.edit_text('Бизнесы в режиме ожидания:'
+                                                 f'{all_building[int(page) + 1]["name"]} {all_building[int(page) + 1]["product"]}\n'
+                                                 f'Плата за стройку: {all_building[int(page) + 1]["bpay"]}\n'
+                                                 f'Строителей на объекте: {len(all_builders)} из {all_building[int(page) + 1]["need_builder"]}\n\n'
+                                                 f'Страница {int(page) + 2}/{len(all_building)}', reply_markup=key)
+            else:
+                await callback.answer('Это последняя страница')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'build_ustr_' in data_callback:
+        user_id, page = data_callback.replace('build_ustr_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            all_building = list(database.users_bus.find(
+                {'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
+            all_builders = list(database.builders_work.find({'boss': all_building[int(page)]['boss']}))
+            if all_building[int(page)]['need_builder'] <= len(all_builders):
+                key = InlineKeyboardMarkup(row_width=3)
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'build_naz_{str(callback.from_user.id)[-3::]}_{int(page)}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'build_vper_{str(callback.from_user.id)[-3::]}_{int(page)}')
+                but_ustroitsya = InlineKeyboardButton('Устроиться ✅',
+                                                      callback_data=f'build_ustr_{str(callback.from_user.id)[-3::]}_{int(page)}')
+                but_otmena = InlineKeyboardButton('Отмена ❌',
+                                                  callback_data=f'build_otm_{str(callback.from_user.id)[-3::]}')
+                key.add(but_nazad, but_ustroitsya, but_vpered, but_otmena)
+                all_builders = list(database.builders_work.find({'boss': all_building[int(page)]['boss']}))
+                await callback.message.edit_text('Бизнесы в режиме ожидания:'
+                                                 f'{all_building[int(page)]["name"]} {all_building[int(page)]["product"]}\n'
+                                                 f'Плата за стройку: {all_building[int(page)]["bpay"]}\n'
+                                                 f'Строителей на объекте: {len(all_builders)} из {all_building[int(page)]["need_builder"]}\n'
+                                                 f'❗️ На этом объекте достигнуто максимальное количество'
+                                                 f'Страница {int(page)+1}/{len(all_building)}', reply_markup=key)
+                return
+            database.builders_work.insert_one({'boss': all_building[int(page)]['boss'],
+                                               'builder': callback.from_user.id})
+            await callback.message.edit_text(f'{await username(callback)}, вы успешно устроились на объект {all_building[int(page)]["name"]} {all_building[int(page)]["product"]}')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'build_otm_' in data_callback:
+        user_id = data_callback.replace('build_otm_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            await callback.message.delete()
+        else:
+            await callback.answer('Это предназначено не вам!')
+    '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПОИСК СТРОЙКИ ДЛЯ СТРОИТЕЛЯ🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     await bot.answer_callback_query(callback.id)
 
 

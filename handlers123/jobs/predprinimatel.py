@@ -61,31 +61,12 @@ async def build_bus(message: types.Message):
             await bot.send_message(message.chat.id, f'{await username(message)}, для начала нужно приобрести бизнес!',
                                    parse_mode='HTML')
             return
-        if users_bus['bpay'] == 0:
-            await bot.send_message(message.chat.id, f'{await username(message)}, для начала вам нужно установить плату строителям за работу!\n'
-                                                    f'Установить плату можно только 1 раз!', parse_mode='HTML')
-            return
+
         if users_bus['status'] == 'buy':
-            # Изменение статуса бизнеса
-            database.users_bus.update_one({'boss': message.from_user.id}, {'$set': {'status': 'need_builders'}})
-            # Получение кол-ва строителей на стройке
-            builders = list(database.builders_work.find({'boss': message.from_user.id}))
-            if len(builders) == users_bus["need_builder"]:
-                # Изменение статуса бизнеса
-                database.users_bus.update_one({'boss': message.from_user.id}, {'$set': {'status': 'building'}})
-                # SCHEDULER
-                res_database.build_bus.insert_one({'boss': message.from_user.id,
-                                                   'time': await add_time_min(1440)})
-                tz = pytz.timezone('Etc/GMT-3')
-                scheduler.add_job(end_build_bus, "date",
-                                  run_date=await add_time_min(1440),
-                                  args=message.from_user.id, id=f'{message.from_user.id}_build', timezone=tz)
-                await bot.send_message(message.chat.id,
-                                       f'{await username(message)}, начал строительство объекта {users_bus["name"]} {users_bus["product"]}\n'
-                                       f'❗️ Стройка закончится через 24 часа ❗️', parse_mode='HTML')
-            else:
-                await bot.send_message(message.chat.id,
-                                       f'{await username(message)}, у вас недостаточно строителей, нужно ещё {users_bus["need_builder"] - len(builders)}', parse_mode='HTML')
+            await bot.send_message(message.chat.id,
+                                   f'{await username(message)}, для начала вам нужно установить плату строителям за работу!\n'
+                                   f'Установить плату можно только 1 раз!', parse_mode='HTML')
+            return
         if users_bus['status'] == 'need_builders':
             # Получение кол-ва строителей на стройке
             builders = list(database.builders_work.find({'boss': message.from_user.id}))
@@ -105,6 +86,7 @@ async def build_bus(message: types.Message):
             else:
                 await bot.send_message(message.chat.id,
                                        f'{await username(message)}, у вас недостаточно строителей, нужно ещё {users_bus["need_builder"] - len(builders)}', parse_mode='HTML')
+            return
         if users_bus["status"] == 'building':
             res_building = res_database.build_bus.find_one({'boss': message.from_user.id})
             # Получение переменных с строки
@@ -161,7 +143,8 @@ async def bpay(message: types.Message):
             if bus_info['bpay'] == 0:
                 if user_info['cash'] >= pay * bus_info['need_builder']:
                     database.users.update_one({'id': message.from_user.id}, {'$set': {'cash': user_info['cash'] - pay * bus_info['need_builder']}})
-                    database.users_bus.update_one({'boss': message.from_user.id}, {'$set': {'bpay': pay}})
+                    database.users_bus.update_one({'boss': message.from_user.id}, {'$set': {'bpay': pay,
+                                                                                            'status': 'need_builders'}})
                     await bot.send_message(message.chat.id, f'{await username(message)}, вы успешно установили плату строителям за работу в размере {pay} $', parse_mode='HTML')
             else:
                 await bot.send_message(message.chat.id,
@@ -189,7 +172,7 @@ async def buybus(message: types.Message):
         but_nazad = InlineKeyboardButton('◀️', callback_data=f'buybus_naz_{str(message.from_user.id)[-3::]}_0')
         but_vpered = InlineKeyboardButton('▶️', callback_data=f'buybus_vper_{str(message.from_user.id)[-3::]}_0')
         but_buy = InlineKeyboardButton('Купить 💲', callback_data=f'buybus_buy_{str(message.from_user.id)[-3::]}_0')
-        but_otmena = InlineKeyboardButton('Отмена ❌', callback_data=f'buybus_otm_{str(message.from_user.id)[-3::]}_0')
+        but_otmena = InlineKeyboardButton('Отмена ❌', callback_data=f'buybus_otm_{str(message.from_user.id)[-3::]}')
         key.add(but_nazad, but_buy, but_vpered, but_otmena)
         bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
         await bot.send_message(message.chat.id, f'Страна производства: {bus_data[0]["country"]}\n'
