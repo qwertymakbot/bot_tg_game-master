@@ -31,11 +31,12 @@ from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDic
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont, ImageOps
-from background import keep_alive
+from filters import antiflood
+
+# from background import keep_alive
 
 
 t = Translator()
-openai.api_key = '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'
 
 from pymongo.mongo_client import MongoClient
 
@@ -50,6 +51,8 @@ food_mak = 40
 food_povar = 90
 food_pekar = 70
 food_fermer = 200
+
+
 # Чтобы не слетали импорты
 def imports():
     print(pytz)
@@ -70,9 +73,10 @@ locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
 #  Логгирование
 logging.basicConfig(level=logging.INFO)
 
+
 # Вызывается при старте
 async def on_startup(_):
-
+    return
     data_vuz = list(res_database.vuz.find())
     for info_vuz in data_vuz:
         # Получение переменных с строки
@@ -82,8 +86,8 @@ async def on_startup(_):
         hour, minute, second = time.split(':')
         time_vuz = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
         time_now = datetime(datetime.now(tz=tz).year, datetime.now(tz=tz).month,
-                                     datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
-                                     datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
+                            datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
+                            datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
         result = time_vuz - time_now
         # Если уже окончил
         educ_info = database.education.find_one({'id': info_vuz["id"]})
@@ -93,11 +97,12 @@ async def on_startup(_):
             job_list.append(str(educ_info["ucheb"]).replace('ВУЗ', '').strip())
             # обновление данных в БД
             database.education.update_one({'id': info_vuz["id"]}, {'$set': {'ucheb': 'нет',
-                                                                     'jobs': ' '.join(job_list)}})
+                                                                            'jobs': ' '.join(job_list)}})
             res_database.vuz.delete_one({'id': info_vuz["id"]})
             await bot.send_message(info_vuz["id"],
                                    f'{await username_2(info_vuz["id"], user_info["firstname"])}, вы окончили обучение в ВУЗе "{str(educ_info["ucheb"]).replace("ВУЗ", "").strip()}"\n'
-                                   f'Теперь вам доступна профессия {str(educ_info["ucheb"]).replace("ВУЗ", "").strip()}', parse_mode='HTML')
+                                   f'Теперь вам доступна профессия {str(educ_info["ucheb"]).replace("ВУЗ", "").strip()}',
+                                   parse_mode='HTML')
         else:
             scheduler.add_job(start_vuz, trigger="date", run_date=info_vuz["time"], timezone=tz,
                               id=f'{info_vuz["id"]}_vuz',
@@ -131,14 +136,41 @@ async def on_startup(_):
                 if citizen != 'нет':
                     scheduler.add_job(end_job_citizen, "date",
                                       run_date=info_job['time'],
-                                      args=(info_job['id'],info_job['id']), id=str(info_job['id']), timezone=tz)
+                                      args=(info_job['id'], info_job['id']), id=str(info_job['id']), timezone=tz)
                 else:
                     scheduler.add_job(end_job_no_citizen, "date",
                                       run_date=info_job['time'],
                                       args=(info_job['id'], info_job['id']), id=str(info_job['id']), timezone=tz)
         except:
             pass
+    # Стройка бизнеса
+    build_data = list(res_database.build_bus.find())
+    for build in build_data:
+        scheduler.add_job(end_build_bus, "date",
+                          run_date=build['time'],
+                          args=build['boss'], id=f'{build["boss"]}_build', timezone=tz)
     print('Бот онлайн')
+
+# Окончание стройки объекта
+async def end_build_bus(user_id):
+    boss_info = database.users.find_one({'id': user_id})
+    builders_info = list(database.builders_work.find({'boss': user_id}))
+    bus_info = database.users_bus.find_one({'boss': user_id})
+    # Изменение статуса стройки
+    database.users_bus.update_one({'boss': user_id}, {'$set': {'status': 'work'}})
+    # Выдача денег строителям\расформирование их
+    for builder in builders_info:
+        builder_info = database.users.find_one({'id': builder['builder']})
+        job_info = database.jobs.find_one({'name_job': builder_info['job']})
+        database.users.update_one({'id': builders_info['builder']}, {'$set': {'cash': builder_info['cash'] + bus_info['cost'] * bus_info['bpay'],
+                                                                              'exp': builder_info['exp'] + job_info['exp_for_job']}})
+        database.builders_work.delete_one({'builder': builder['builder']})
+        await bot.send_message(builder['builder'], f'{await username_2(builder_info["id"], builders_info["firstname"])}, вы получили вознаграждение за стройку объекта {bus_info["name"]} {bus_info["product"]}\n'
+                                                   f'💵 +{bus_info["bpay"]}\n'
+                                                   f'🏵 +{job_info["exp_for_job"]}', parse_mode='HTML')
+    res_database.build_bus.delete_one({'boss': user_id})
+    await bot.send_message(user_id,
+                           f'{await username_2(user_id, boss_info["firstname"])}, ваш бизнес {bus_info["name"]} {bus_info["product"]} завершил стройку!', parse_mode='HTML')
 
 # Окончание работы если не гражданин
 async def end_job_no_citizen(user_id, chat_id):
@@ -217,6 +249,8 @@ async def end_job_no_citizen(user_id, chat_id):
                                    f'💵 +{job_info["cash"]}$\n', parse_mode='HTML')
     except:
         pass
+
+
 # Окончание работы если гражданин
 async def end_job_citizen(user_id, chat_id):
     # Получение данных
@@ -228,16 +262,18 @@ async def end_job_citizen(user_id, chat_id):
         if user_info['job'] == 'Работник мака':
             # обновление данных пользователя
             database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(job_info['cash'] - round(
-                                                                     int(job_info['cash']) * (
-                                                                             country_info['nalog_job'] / 100))),
+                                                                 'cash': user_info['cash'] + int(
+                                                                     job_info['cash'] - round(
+                                                                         int(job_info['cash']) * (
+                                                                                 country_info['nalog_job'] / 100))),
                                                                  'food': user_info['food'] + round(food_mak * 0.1)}})
             res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
             # обновление данных страны
             database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                         'food': int(country_info['food']) + food_mak}})
+                '$set': {
+                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                    'food': int(country_info['food']) + food_mak}})
             await bot.send_message(chat_id,
                                    f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
                                    f'🏵 +{job_info["exp_for_job"]} опыта\n'
@@ -250,16 +286,18 @@ async def end_job_citizen(user_id, chat_id):
         elif user_info['job'] == 'Повар':
             # обновление данных пользователя
             database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(job_info['cash'] - round(
-                                                                     int(job_info['cash']) * (
-                                                                             country_info['nalog_job'] / 100))),
+                                                                 'cash': user_info['cash'] + int(
+                                                                     job_info['cash'] - round(
+                                                                         int(job_info['cash']) * (
+                                                                                 country_info['nalog_job'] / 100))),
                                                                  'food': user_info['food'] + round(food_povar * 0.1)}})
             res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
             # обновление данных страны
             database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                         'food': int(country_info['food']) + food_povar}})
+                '$set': {
+                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                    'food': int(country_info['food']) + food_povar}})
             await bot.send_message(chat_id,
                                    f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
                                    f'🏵 +{job_info["exp_for_job"]} опыта\n'
@@ -272,16 +310,18 @@ async def end_job_citizen(user_id, chat_id):
         elif user_info['job'] == 'Пекарь' or user_info['job'] == 'Кондитер':
             # обновление данных пользователя
             database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(job_info['cash'] - round(
-                                                                     int(job_info['cash']) * (
-                                                                             country_info['nalog_job'] / 100))),
+                                                                 'cash': user_info['cash'] + int(
+                                                                     job_info['cash'] - round(
+                                                                         int(job_info['cash']) * (
+                                                                                 country_info['nalog_job'] / 100))),
                                                                  'food': user_info['food'] + round(food_pekar * 0.1)}})
             res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
             # обновление данных страны
             database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                         'food': int(country_info['food']) + food_pekar}})
+                '$set': {
+                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                    'food': int(country_info['food']) + food_pekar}})
             await bot.send_message(chat_id,
                                    f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
                                    f'🏵 +{job_info["exp_for_job"]} опыта\n'
@@ -294,16 +334,18 @@ async def end_job_citizen(user_id, chat_id):
         elif user_info['job'] == 'Фермер':
             # обновление данных пользователя
             database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(job_info['cash'] - round(
-                                                                     int(job_info['cash']) * (
-                                                                             country_info['nalog_job'] / 100))),
+                                                                 'cash': user_info['cash'] + int(
+                                                                     job_info['cash'] - round(
+                                                                         int(job_info['cash']) * (
+                                                                                 country_info['nalog_job'] / 100))),
                                                                  'food': user_info['food'] + round(food_fermer * 0.1)}})
             res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
             # обновление данных страны
             database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                         'food': int(country_info['food']) + food_fermer}})
+                '$set': {
+                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                    'food': int(country_info['food']) + food_fermer}})
             await bot.send_message(chat_id,
                                    f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
                                    f'🏵 +{job_info["exp_for_job"]} опыта\n'
@@ -317,16 +359,18 @@ async def end_job_citizen(user_id, chat_id):
             oil = 50  # Нефть
             # обновление данных пользователя
             database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(job_info['cash'] - round(
-                                                                     int(job_info['cash']) * (
-                                                                             country_info['nalog_job'] / 100))),
+                                                                 'cash': user_info['cash'] + int(
+                                                                     job_info['cash'] - round(
+                                                                         int(job_info['cash']) * (
+                                                                                 country_info['nalog_job'] / 100))),
                                                                  'oil': user_info['oil'] + round(oil * 0.1)}})
             res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
             # обновление данных страны
             database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                         'oil': int(country_info['oil']) + oil}})
+                '$set': {
+                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                    'oil': int(country_info['oil']) + oil}})
             await bot.send_message(chat_id,
                                    f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
                                    f'🏵 +{job_info["exp_for_job"]} опыта\n'
@@ -342,14 +386,16 @@ async def end_job_citizen(user_id, chat_id):
         else:
             # обновление данных пользователя
             database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(job_info['cash'] - round(
-                                                                     int(job_info['cash']) * (
-                                                                             country_info['nalog_job'] / 100)))}})
+                                                                 'cash': user_info['cash'] + int(
+                                                                     job_info['cash'] - round(
+                                                                         int(job_info['cash']) * (
+                                                                                 country_info['nalog_job'] / 100)))}})
             res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
             # обновление данных страны
             database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100))}})
+                '$set': {
+                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100))}})
             await bot.send_message(chat_id,
                                    f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
                                    f'🏵 +{job_info["exp_for_job"]} опыта\n'
@@ -360,13 +406,16 @@ async def end_job_citizen(user_id, chat_id):
     except:
         pass
 
+
 async def isSubsc(message):
     members = await bot.get_chat_member(chat_id=-1001879290440, user_id=message.from_user.id)
     if members['status'] != 'left':
         return
     else:
         await bot.send_message(message.chat.id,
-                               f'{await username(message)}, чтобы получить доступ к команде, вы должны состоять в моем канале @makbotinfo', parse_mode='HTML')
+                               f'{await username(message)}, чтобы получить доступ к команде, вы должны состоять в моем канале @makbotinfo',
+                               parse_mode='HTML')
+
 
 class Cong(StatesGroup):
     texta = State()
@@ -394,6 +443,7 @@ async def text(message, state: FSMContext):
             pass
     await message.reply(f'Текст разослан {num} раз')
 
+
 @dp.message_handler(commands='start')
 async def start(message: types.Message):
     if message.get_args():
@@ -406,11 +456,13 @@ async def start(message: types.Message):
                                                     '    - 2500$\n'
                                                     '    - 50 опыта')
             user_info = database.users.find_one({'id': int(message.get_args().split(' ')[0])})
-            database.users.update_one({'id': int(message.get_args().split(' ')[0])}, {'$set': {'cash': user_info["cash"] + 5000,
-                                                                              'exp': user_info["exp"] + 100}})
+            database.users.update_one({'id': int(message.get_args().split(' ')[0])},
+                                      {'$set': {'cash': user_info["cash"] + 5000,
+                                                'exp': user_info["exp"] + 100}})
             await bot.send_message(int(message.get_args().split(' ')[0]), 'Вам были начислены за приведенного друга:\n'
-                                                    '    - 5000$\n'
-                                                    '    - 100 опыта')
+                                                                          '    - 5000$\n'
+                                                                          '    - 100 опыта')
+
 
 # /help Помощь
 @dp.message_handler(commands='help')
@@ -487,9 +539,11 @@ async def sharemoney(message):
                                        f'{await username(message)} успешно занял у {await username(message.reply_to_message)} сумму {money_for_share:n}$'.replace(
                                            ',', ' '), parse_mode='HTML')
             else:
-                await bot.send_message(message.chat.id, f'{await username(message)}, вам микрозайм не доступен', parse_mode='HTML')
+                await bot.send_message(message.chat.id, f'{await username(message)}, вам микрозайм не доступен',
+                                       parse_mode='HTML')
         else:
-            await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно средств', parse_mode='HTML')
+            await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно средств',
+                                   parse_mode='HTML')
 
 
 # Мои команды
@@ -549,7 +603,8 @@ async def moi_komandi(message):
             await bot.send_message(message.chat.id, 'У вас нет доступа к дополнительным командам')
     else:
         await bot.send_message(message.chat.id,
-                               f'{await username(message)}, данная команда доступна только в личные сообщения!', parse_mode='HTML')
+                               f'{await username(message)}, данная команда доступна только в личные сообщения!',
+                               parse_mode='HTML')
 
 
 # /ping Проверка пинга бота
@@ -624,7 +679,7 @@ async def me(message):
                        fill='#0D0D0D')
     # дата
     tz = pytz.timezone('Etc/GMT-3')
-    time_now = f'{f"0{datetime.now(tz=tz).date}" if len(str(datetime.now(tz=tz).date)) == 1 else datetime.now(tz=tz).date}.{f"0{datetime.now(tz=tz).month}" if len(str(datetime.now(tz=tz).month)) == 1 else datetime.now(tz=tz).month}.{datetime.now(tz=tz).year}\n{datetime.now(tz=tz).hour}:{f"0{datetime.now(tz=tz).minute}" if len(str(datetime.now(tz=tz).minute)) == 1 else datetime.now(tz=tz).minute}'
+    time_now = f'{f"0{datetime.now(tz=tz).day}" if len(str(datetime.now(tz=tz).day)) == 1 else datetime.now(tz=tz).day}.{f"0{datetime.now(tz=tz).month}" if len(str(datetime.now(tz=tz).month)) == 1 else datetime.now(tz=tz).month}.{datetime.now(tz=tz).year}\n{datetime.now(tz=tz).hour}:{f"0{datetime.now(tz=tz).minute}" if len(str(datetime.now(tz=tz).minute)) == 1 else datetime.now(tz=tz).minute}'
     font_time = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Arimo-SemiBold.ttf', size=24)
     draw_text.text((820, 446),
                    time_now,
@@ -681,7 +736,6 @@ async def me(message):
 async def countries(message):
     await check_user(message)
     countries_settings = database.countries.find()
-    # countries_settings = cur.execute("""SELECT country, cost, president FROM countries""").fetchall()
     buttons = InlineKeyboardMarkup(1)
     for country in countries_settings:
         if country['president'] == 0:
@@ -726,7 +780,8 @@ async def leave_citizen(message):
     await check_user(message)
     user_data = database.users.find_one({'id': message.from_user.id})
     if user_data["citizen_country"] == 'нет':  # Если не гражданин
-        await message.answer(f'{await username(message)}, вы не являетесь гражданином какой-либо страны', parse_mode='HTML')
+        await message.answer(f'{await username(message)}, вы не являетесь гражданином какой-либо страны',
+                             parse_mode='HTML')
     elif user_data['president_country'] != 'нет':
         await message.answer(f'{await username(message)}, президент не может покинуть страну', parse_mode='HTML')
 
@@ -735,7 +790,8 @@ async def leave_citizen(message):
             president_data = database.users.find_one({'president_country': user_data["citizen_country"]})
             database.users.update_one({'id': message.from_user.id}, {'$set': {'citizen_country': 'нет'}})
             await message.answer(
-                f'{await username_2(user_data["citizen_country"], president_data["firstname"])}, у вас больше нет этого гражданина {await username(message)}', parse_mode='HTML')
+                f'{await username_2(user_data["citizen_country"], president_data["firstname"])}, у вас больше нет этого гражданина {await username(message)}',
+                parse_mode='HTML')
         else:
             try:
                 await message.answer(f'{await username(message)}, сначала окончите работу!', parse_mode='HTML')
@@ -778,7 +834,6 @@ async def cars(message):
             print(f'res/cars_pic/{cars_data[num_car - 1]["name_car"] + " " + cars_data[num_car - 1]["color"]}.png')
 
 
-
 @dp.message_handler(commands='id')
 async def n1(message):
     await message.reply(f'Мой ID: {message.from_user.id}\n'
@@ -788,7 +843,7 @@ async def n1(message):
 @dp.message_handler(IsQuestions())
 async def text(message):
     token_openai = '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'
-    chats = [-1001769791322, -1001529344518]
+    chats = [-1001920241477]
     if message.reply_to_message and message.reply_to_message['from'][
         'is_bot'] and message.chat.id in chats or 'бот' in message.text.split() and message.chat.id in chats or 'Бот' in message.text.split() and message.chat.id in chats:
 
@@ -800,7 +855,7 @@ async def text(message):
             timeout=30,
             payload={
                 "model": "text-davinci-003",
-                "prompt": f"{message.text.capitalize().replace('бот', '')}",
+                "prompt": f"{message.text.capitalize().replace('Бот', '')}",
                 "max_tokens": 500,
                 "temperature": 0,
                 "top_p": 1,
@@ -812,7 +867,7 @@ async def text(message):
     elif message.reply_to_message and message.reply_to_message['from'][
         'is_bot'] and message.chat.id not in chats or 'бот' in message.text.split() and message.chat.id not in chats or 'Бот' in message.text.split() and message.chat.id not in chats:
         await message.answer(
-            'Чтобы получить доступ к ИИ и получать ответы на все вопросы, обратитесь к моему разработчику @KJIUKU')
+            'ИИ бота доступен только в его игровом чате @makbot_game')
 
 
 @dp.message_handler(IsPromo())
@@ -827,7 +882,7 @@ async def text(message):
                 amount_activations = database.promo.count_documents({"promo": line.split('.')[0].lower()})
                 if int(amount_activations) < int(line.split('.')[3]):
                     isActivated = database.promo.find_one({'$and': [{'promo': line.split('.')[0].lower()},
-                                                          {'id': message.from_user.id}]})
+                                                                    {'id': message.from_user.id}]})
                     if isActivated is None:
                         database.promo.insert_one({'id': message.from_user.id,
                                                    'promo': line.split('.')[0].lower()})
@@ -844,9 +899,12 @@ async def text(message):
                                                disable_web_page_preview=True,
                                                parse_mode=types.ParseMode.HTML)
                     else:
-                        await bot.send_message(message.chat.id,f'{await username(message)},вы уже активировали данный промокод', parse_mode='HTML')
+                        await bot.send_message(message.chat.id,
+                                               f'{await username(message)},вы уже активировали данный промокод',
+                                               parse_mode='HTML')
                 else:
-                    await bot.send_message(message.chat.id,f'{await username(message)}, данный код больше неактивен', parse_mode='HTML')
+                    await bot.send_message(message.chat.id, f'{await username(message)}, данный код больше неактивен',
+                                           parse_mode='HTML')
 
 
 # Выигрыш
@@ -912,7 +970,9 @@ async def get_game_data(message):
             await lose(message, amount_money, rate_money, user_id)
     else:
         enough_money = rate_money - int(amount_money)
-        await bot.send_message(message.chat.id, f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n' + 'Ваш баланс: ' + f'{amount_money:n}$', parse_mode='HTML')
+        await bot.send_message(message.chat.id,
+                               f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n' + 'Ваш баланс: ' + f'{amount_money:n}$',
+                               parse_mode='HTML')
 
 
 # Баскетбол
@@ -1097,9 +1157,10 @@ async def top(message):
 # Получить реферальную ссылку
 @dp.message_handler(commands='refer')
 async def refer(message):
-    await bot.send_message(message.chat.id, f'{await username(message)}, по этой ссылке ваш друг получит 2500$ и 50 опыта\n'
-                                            f'ВЫ получите 5000$ и 100 опыта\n'
-                                            f'https://t.me/Mak023_bot?start={message.from_user.id}', parse_mode='HTML')
+    await bot.send_message(message.chat.id,
+                           f'{await username(message)}, по этой ссылке ваш друг получит 2500$ и 50 опыта\n'
+                           f'ВЫ получите 5000$ и 100 опыта\n'
+                           f'https://t.me/Mak023_bot?start={message.from_user.id}', parse_mode='HTML')
 
 
 # Тегает
@@ -1162,6 +1223,7 @@ async def add_time_min(minute):
     clock_in_half_hour = datetime.now(tz=tz) + timedelta(minutes=int(minute))
     return str(clock_in_half_hour).split('.')[0]
 
+
 # Начало обучения
 async def start_vuz(user_id, name_job):
     educ_info = database.education.find_one({'id': user_id})
@@ -1172,23 +1234,22 @@ async def start_vuz(user_id, name_job):
     database.education.update_one({'id': user_id}, {'$set': {'ucheb': 'нет',
                                                              'jobs': ' '.join(job_list)}})
     res_database.vuz.delete_one({'id': user_id})
-    await bot.send_message(user_id, f'{await username_2(user_id, user_info["firstname"])}, вы окончили обучение в ВУЗе "{name_job}"\n'
-                                    f'Теперь вам доступна профессия {name_job}', parse_mode='HTML')
+    await bot.send_message(user_id,
+                           f'{await username_2(user_id, user_info["firstname"])}, вы окончили обучение в ВУЗе "{name_job}"\n'
+                           f'Теперь вам доступна профессия {name_job}', parse_mode='HTML')
+
 
 scheduler = AsyncIOScheduler()
 scheduler.start()
 if __name__ == '__main__':
-    keep_alive()
+    #    keep_alive()
     logging.basicConfig(level=logging.INFO)
     # Регистрация хендлеров
-    from handlers123 import job, bussiness, inline_cancel_bus, all, bonus, education
+    from handlers123 import job, bussiness, all, bonus, education
     from handlers123.shop import inline_shop
     from handlers123.jobs import autocreater, feldsher, predprinimatel, president, stroitel, krupye
     from handlers123 import joke
 
-    # inline_get_job.register_handlers_jobs(dp)
-    # inline_get_countries.register_handlers_countries(dp)
-    inline_cancel_bus.register_handlers_cancel_bus(dp)
     # jobs
     autocreater.register_handlers_autocreater(dp)
     feldsher.register_handlers_feldsher(dp)
@@ -1208,7 +1269,8 @@ if __name__ == '__main__':
     joke.register_handlers_countries(dp)
     # bonus
     bonus.register_handlers_bonus(dp)
-
+    # antiflood
+    antiflood.setup_antiflood(dp)
     # all
     all.reg_all(dp)
 

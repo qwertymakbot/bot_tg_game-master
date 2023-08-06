@@ -21,8 +21,8 @@ async def work(message: types.Message):
     user_id = message.from_user.id
     user_info = database.users.find_one({'id': user_id})
     res_job_info = res_database.job.find_one({'id': user_id})
-    res_disease_info = res_database.disease.find_one({'id': user_id})
     if user_info["job"] != 'нет':  # Если есть работа
+        print(user_info)
         if res_job_info and res_job_info['working']:
             # Получение переменных с строки
             tz = pytz.timezone('Etc/GMT-3')
@@ -142,7 +142,7 @@ async def work(message: types.Message):
                                               args=(message, user_info['job']), id=str(user_id), timezone=tz)
                     else:
                         await bot.send_message(message.chat.id,
-                                               f'{await username(message)}, в вашей стране недостаточно еды!')
+                                               f'{await username(message)}, в вашей стране недостаточно еды!', parse_mode='HTML')
                 else:  # Если не гражданин
                     job_info = database.jobs.find_one({'name_job': user_info['job']})
                     res_database.job.update_one({'id': user_id},

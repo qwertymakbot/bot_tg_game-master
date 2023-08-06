@@ -11,7 +11,6 @@ marketplace_collection = database['marketplace']
 marketplace_collection.insert_one({'id':1234})
 
 
-
 class Marketplase:
     def __init__():
         ...
