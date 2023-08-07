@@ -44,17 +44,17 @@ class Marketplace:
     async def buy_oil(self, callback: types.CallbackQuery) -> None:
         ...
 
-        async def buy_food(self, callback: types.CallbackQuery) -> None:
+    async def buy_food(self, callback: types.CallbackQuery) -> None:
             ...
 
-        async def buy_car(self, callback: types.CallbackQuery) -> None:
+    async def buy_car(self, callback: types.CallbackQuery) -> None:
             ...
 
-        async def oil_list(self) -> list:
+    async def oil_list(self) -> list:
             return marketplace_collection.find({'product': 'oil'})
 
-        async def food_list(self) -> list:
+    async def food_list(self) -> list:
             return marketplace_collection.find({'product': 'food'})
 
-        async def cars_list(self) -> list:
+    async def cars_list(self) -> list:
             return marketplace_collection.find({'product': 'car'})
