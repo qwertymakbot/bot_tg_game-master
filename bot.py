@@ -127,9 +127,9 @@ async def on_startup(_):
                 citizen = database.users.find_one({'id': info_job['id']})['citizen_country']
                 # Если гражданин
                 if citizen != 'нет':
-                    await end_job_citizen(info_job['id'], -1001529344518)
+                    await end_job_citizen(info_job['id'], info_job['id'])
                 else:
-                    await end_job_no_citizen(info_job['id'], -1001529344518)
+                    await end_job_no_citizen(info_job['id'], info_job['id'])
             else:
                 citizen = database.users.find_one({'id': info_job['id']})['citizen_country']
                 # Если гражданин
