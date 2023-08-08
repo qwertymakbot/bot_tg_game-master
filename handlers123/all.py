@@ -1540,7 +1540,6 @@ async def all(callback: types.CallbackQuery):
     if 'buybus_buy_' in data_callback:
         user_id, page = data_callback.replace('buybus_buy_', '').split('_')
         if str(callback.from_user.id)[-3::] == user_id:
-
             user_info = database.users.find_one({'id': callback.from_user.id})
             bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
             # Проверка ресурсов
@@ -1555,6 +1554,12 @@ async def all(callback: types.CallbackQuery):
                 await callback.message.edit_text(
                     f'{await username(callback)}, вам не хватает {bus_data[int(page)]["food"] - user_info["food"]} 🍔', parse_mode='HTML')
                 return
+            # Снятие ресурсов
+            database.users.update_one({'id': callback.from_user.id}, {'$set': {
+                'cash': user_info['cash'] - bus_data[int(page)]['cost'],
+                'oil': user_info['oil'] - bus_data[int(page)]['oil'],
+                'food': user_info['food'] - bus_data[int(page)]['food']
+            }})
             # Запись страны в user_bus
             database.users_bus.insert_one({'boss': callback.from_user.id,
                                            'country': bus_data[int(page)]['country'],
@@ -1567,7 +1572,7 @@ async def all(callback: types.CallbackQuery):
                                            'work_place': bus_data[int(page)]['work_place'],
                                            'time_to_create': bus_data[int(page)]['time_to_create'],
                                            'status': 'buy',
-                                           'bpay:': 0}
+                                           'bpay': 0}
                                           )
             await callback.message.edit_text(f'{await username(callback)}, вы успешно приобрели бизнес {bus_data[int(page)]["name"]} {bus_data[int(page)]["product"]}', parse_mode='HTML')
 

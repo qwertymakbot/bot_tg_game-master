@@ -137,6 +137,7 @@ async def bpay(message: types.Message):
     await check_user(message)
     try:
         pay = int(message.get_args().split()[0])
+        print(pay)
         user_info = database.users.find_one({'id': message.from_user.id})
         if user_info['job'] == 'Предприниматель':
             bus_info = database.users_bus.find_one({'boss': message.from_user.id})

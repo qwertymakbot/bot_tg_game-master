@@ -25,38 +25,26 @@ async def build(message: types.Message):
                                                 
                                f'Страница 1/{len(all_building)}', reply_markup=key)
     else:
-        await bot.send_message(message.chat.id, f'{await username(message)}, это доступно только Строителю')
+        await bot.send_message(message.chat.id, f'{await username(message)}, это доступно только Строителю', parse_mode='HTML')
 
 
 # /leave_build Уйти со стройки
-async def leave_build(message):
+async def leave_build(message: types.Message):
     await check_user(message)
-    with sqlite3.connect('game/data.db', timeout=10) as conn:
-        cur = conn.cursor()
-        job = cur.execute("""SELECT job FROM users WHERE user_id = ?""", (message.from_user.id,)).fetchone()
-        if job[0] == 'Строитель':
-            boss = cur.execute("""SELECT boss FROM builders_work WHERE builder = ?""",
-                               (message.from_user.id,)).fetchone()
-            if boss is not None:
-                with open(f'./game/build_bus/{boss[0]}.json', 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    if not data['isbuilding']:
-                        with open(f'./game/build_bus/{boss[0]}.json', 'w', encoding='utf-8') as f:
-                            data['builders'].remove(message.from_user.id)
-                            json.dump(data, f)
-                            cur.execute("""DELETE FROM builders_work WHERE builder = ?""", (message.from_user.id,))
-                            conn.commit()
-                            await message.answer(
-                                f'@{message.from_user.username}, вы ушли со стройки!')
-                    else:
-                        await message.answer(
-                            f'@{message.from_user.username}, процесс стройки уже запущен, ожидайте окончания!')
-            else:
-                await message.answer(
-                    f'@{message.from_user.username}, вы не работаете ни на каком строительном объекте!')
+    user_info = database.users.find_one({'id': message.from_user.id})
+    if user_info['job'] == 'Строитель':
+        bus_info = database.users_bus.find_one({'boss': database.builders_work.find_one({'builder': message.from_user.id})['boss']})
+        if bus_info['status'] != 'building':
+            key = InlineKeyboardMarkup()
+            but_yes = InlineKeyboardButton('Да ✅', callback_data=f'leave_build_yes_{str(message.from_user.id)[-3::]}')
+            but_no = InlineKeyboardButton('Нет ❌', callback_data=f'leave_build_no_{str(message.from_user.id)[-3::]}')
+            key.add(but_yes, but_no)
+            await bot.send_message(message.chat.id, f'{await username(message)}, вы уверены, что хотите уволиться с объекта {bus_info["name"]} {bus_info["product"]} ?', reply_markup=key, parse_mode='HTML')
         else:
-            await message.answer(f'@{message.from_user.username}, данная команда доступна только строителям!')
-        cur.close()
+            await bot.send_message(message.chat.id, f'{await username(message)}, вы не можете уволиться пока идёт стройка!', parse_mode='HTML')
+
+    else:
+        await bot.send_message(message.chat.id, f'{await username(message)}, данная команда доступна только Строителю!', parse_mode='HTML')
 
 
 def register_handlers_stroitel(dp: Dispatcher):
