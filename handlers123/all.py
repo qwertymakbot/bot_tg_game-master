@@ -1459,7 +1459,30 @@ async def all(callback: types.CallbackQuery):
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼КЕЙСЫ🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     '''marketplace'''
     if 'marketplace_' in data_callback:
-        await callback.answer(text='ждите, скоро будет')
+        categories_kb = InlineKeyboardMarkup(row_width=1)
+        sale_btn = InlineKeyboardButton(text='Продать', callback_data='marketsale_')
+        buy_btn = InlineKeyboardButton(text='Купить', callback_data='marketbuy_')
+        categories_kb.add(sale_btn, buy_btn)
+        await callback.message.edit_text(text='Выберите действие:', reply_markup=categories_kb)
+        
+    if 'marketsale_' in data_callback:
+        kb = InlineKeyboardMarkup(row_width=1)
+        oil = InlineKeyboardButton(text='Топливо', callback_data='marketseller_sale_oil')
+        food = InlineKeyboardButton(text='Еда', callback_data='marketseller_sale_food')
+        car = InlineKeyboardButton(text='Автомобиль', callback_data='marketseller_sale_car')
+        back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
+        kb.add(oil, food, car, back)
+        await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
+
+    if 'marketbuy_' in data_callback:
+        kb = InlineKeyboardMarkup(row_width=1)
+        oil = InlineKeyboardButton(text='Топливо', callback_data='marketbuyer_buy_oil')
+        food = InlineKeyboardButton(text='Еда', callback_data='marketbuyer_buy_food')
+        car = InlineKeyboardButton(text='Автомобиль', callback_data='marketbuyer_buy_car')
+        back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
+        kb.add(oil, food, car, back)
+        await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
+        
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПРОДАЖА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'sell_bus_' in data_callback:
         user_id, cost = data_callback.replace('sell_bus_', '').split('_')
