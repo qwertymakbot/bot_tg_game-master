@@ -70,7 +70,7 @@ def imports():
 # Разбиение на триады
 import locale
 
-locale.setlocale(locale.LC_ALL, "en_US.UTF-8")
+locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
 #  Логгирование
 logging.basicConfig(level=logging.INFO)
 
@@ -516,8 +516,6 @@ async def sharemoney(message):
     money_for_share = int(end_value) * 1000 ** amount_k
     table_users = database.users
     amount_money_give_user = table_users.find_one({'id': user_id})
-    member = await bot.get_chat_member(message.chat.id, user_id)
-    admin = member.is_chat_creator()
     if message.reply_to_message:
         id_get_users = message.reply_to_message.from_user.id
         amount_money_get_user = table_users.find_one({'id': id_get_users})
@@ -530,7 +528,7 @@ async def sharemoney(message):
                                    f'{await username(message)} успешно перевел {await username(message.reply_to_message)} сумму {money_for_share:n}$'.replace(
                                        ',', ' '), parse_mode='HTML')
         elif sym == '-' and money_for_share <= amount_money_get_user['cash']:
-            if admin:
+            if user_id == 735569411:
                 table_users.update_one({'id': id_get_users},
                                        {'$set': {'cash': amount_money_get_user['cash'] - money_for_share}})
                 table_users.update_one({'id': user_id},
@@ -1162,6 +1160,13 @@ async def refer(message):
                            f'{await username(message)}, по этой ссылке ваш друг получит 2500$ и 50 опыта\n'
                            f'ВЫ получите 5000$ и 100 опыта\n'
                            f'https://t.me/Mak023_bot?start={message.from_user.id}', parse_mode='HTML')
+
+
+# Тег
+@dp.message_handler(commands='tag')
+async def tagg(message: types.Message):
+    id = int(message.get_args())
+    await message.reply(await username_2(id, 'пользователь'), parse_mode='HTML')
 
 
 # Тегает
