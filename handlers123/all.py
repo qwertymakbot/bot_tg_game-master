@@ -8,7 +8,7 @@ from bot import Dispatcher, check_user, database, types, InlineKeyboardButton, I
     InputFile, quote_html, username, username_2, pytz, scheduler, add_time_min, res_database, start_vuz
 from cases import Database, Cases, little_case, middle_case, big_case
 from create_bot import bot
-from .shop.market import MarketplaceStates
+
 
 # Отмена
 async def otmena(callback: types.CallbackQuery):
