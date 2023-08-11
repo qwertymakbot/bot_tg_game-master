@@ -3,18 +3,19 @@ import json
 import os
 import random
 
+from aiogram.dispatcher import FSMContext
 from bot import Dispatcher, check_user, database, types, InlineKeyboardButton, InlineKeyboardMarkup, \
     InputFile, quote_html, username, username_2, pytz, scheduler, add_time_min, res_database, start_vuz
 from cases import Database, Cases, little_case, middle_case, big_case
 from create_bot import bot
-
+from .shop.market import MarketplaceStates
 
 # Отмена
 async def otmena(callback: types.CallbackQuery):
     await callback.message.delete()
 
 
-async def all(callback: types.CallbackQuery):
+async def all(callback: types.CallbackQuery, state: FSMContext):
     await check_user(callback)
     user_id = callback.from_user.id
     data_callback = callback.data
@@ -1482,6 +1483,10 @@ async def all(callback: types.CallbackQuery):
         back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
         kb.add(oil, food, car, back)
         await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
+
+    if 'marketseller_sale_food' in data_callback:
+        await MarketplaceStates.quantity.set()
+        
         
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПРОДАЖА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'sell_bus_' in data_callback:

@@ -33,6 +33,7 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from filters import antiflood
 
+
 # from background import keep_alive
 
 
@@ -1249,7 +1250,9 @@ if __name__ == '__main__':
     from handlers123.shop import inline_shop
     from handlers123.jobs import autocreater, feldsher, predprinimatel, president, stroitel, krupye
     from handlers123 import joke
+    from handlers123.shop import market
 
+    market.register_handlers_market(dp)
     # jobs
     autocreater.register_handlers_autocreater(dp)
     feldsher.register_handlers_feldsher(dp)
