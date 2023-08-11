@@ -77,18 +77,35 @@ class Marketplace:
             return list(marketplace_collection.find({'product': 'car'}))
 
 
-async def market_sale_food(message: types.Message, callback: types.CallbackQuery, state: MarketplaceStates.quantity):
-    user_info = database.users.find_one({'id': callback.from_user.id})
+
+async def start_sale(callback: types.CallbackQuery, message: types.message):
+    await bot.send_message(message.chat.id, text='укажи количество')
+    print(message.text, callback, message)
+    await MarketplaceStates.quantity.set()
+    
+
+
+async def market_sale_food(message: types.Message):
+    user_info = database.users.find_one({'id': message.from_user.id})
+    print(user_info)
     user_food = int(user_info['food'])
+    print(message)
+    try:
+        print(message.text)
+    except:
+        print(message)
     data_food = message.text
+    print(data_food, user_food)
     if user_food >= data_food:
-        await callback.message.answer('Укажите количество еды в кг')
+        await message.answer('теперь цену')
         await MarketplaceStates.next()
+        
     else:
-        await callback.message.answer('Ты что-то сделал не так')
+        await message.answer('ты что-то сделал не так')
         await MarketplaceStates.finish()
     
     
 
 def register_handlers_market(dp: Dispatcher):
-    dp.register_message_handler(market_sale_food, content_types=['text'], state=MarketplaceStates.quantity)
+    dp.register_callback_query_handler(market_sale_food, text='marketseller_sale_food', state=None)
+    dp.register_message_handler(market_sale_food, state=MarketplaceStates.quantity, content_types=['text'])

@@ -1483,9 +1483,7 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
         kb.add(oil, food, car, back)
         await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
-
-    if 'marketseller_sale_food' in data_callback:
-        await MarketplaceStates.quantity.set()
+  
         
         
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПРОДАЖА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
