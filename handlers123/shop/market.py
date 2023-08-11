@@ -4,7 +4,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.dispatcher import FSMContext 
-from bot import dp
+from create_bot import dp
 
 database_res = MongoClient(
     "mongodb+srv://maksemqwerty:maksem228@cluster0.mylnsur.mongodb.net/?retryWrites=true&w=majority").res
@@ -77,35 +77,30 @@ class Marketplace:
             return list(marketplace_collection.find({'product': 'car'}))
 
 
-
-async def start_sale(callback: types.CallbackQuery, message: types.message):
-    await bot.send_message(message.chat.id, text='укажи количество')
-    print(message.text, callback, message)
+@dp.callback_query_handler(text='marketseller_sale_food',  state=None)
+async def start_sale(callback: types.CallbackQuery):
+    user_info = database.users.find_one({'id': callback.from_user.id})
+    user_food = int(user_info['food'])
+    await callback.message.answer(text=f'укажи количество (доступно:{user_food}кг)')
     await MarketplaceStates.quantity.set()
     
 
-
-async def market_sale_food(message: types.Message):
+@dp.message_handler(content_types=['text'], state=MarketplaceStates.quantity)
+async def market_sale_food(message: types.Message, state:):
     user_info = database.users.find_one({'id': message.from_user.id})
-    print(user_info)
     user_food = int(user_info['food'])
-    print(message)
-    try:
-        print(message.text)
-    except:
-        print(message)
-    data_food = message.text
-    print(data_food, user_food)
+    data_food = int(message.text) 
     if user_food >= data_food:
         await message.answer('теперь цену')
         await MarketplaceStates.next()
-        
+        async with state.proxy() as data:
+            data['food']=int(message.text)
     else:
         await message.answer('ты что-то сделал не так')
         await MarketplaceStates.finish()
-    
+    print(data['food'])
     
 
-def register_handlers_market(dp: Dispatcher):
-    dp.register_callback_query_handler(market_sale_food, text='marketseller_sale_food', state=None)
-    dp.register_message_handler(market_sale_food, state=MarketplaceStates.quantity, content_types=['text'])
+#def register_handlers_market(dp: Dispatcher):
+    #dp.register_callback_query_handler(market_sale_food, text='marketseller_sale_food', state=None)
+    #dp.register_message_handler(market_sale_food, state=MarketplaceStates.quantity, content_types=['text'])
