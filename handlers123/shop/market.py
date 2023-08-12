@@ -5,6 +5,7 @@ from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.dispatcher import FSMContext
 from create_bot import dp
+import random
 
 database_res = MongoClient(
     "mongodb+srv://maksemqwerty:maksem228@cluster0.mylnsur.mongodb.net/?retryWrites=true&w=majority").res
@@ -39,6 +40,7 @@ class Marketplace:
 
     async def sale_oil(data: dict) -> str:
         marketplace_collection.insert_one({
+            '_id': random.randint(10000000),
             'id': data['id'],
             'product': 'oil',
             'price': data['price'],
@@ -50,6 +52,7 @@ class Marketplace:
 
     async def sale_food(data: dict) -> str:
         marketplace_collection.insert_one({
+            '_id': random.randint(10000000),
             'id': data['id'],
             'product': 'food',
             'price': data['price'],
