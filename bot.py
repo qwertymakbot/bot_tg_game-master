@@ -48,10 +48,10 @@ database = MongoClient(
 res_database = MongoClient(
     "mongodb+srv://maksemqwerty:maksem228@cluster0.mylnsur.mongodb.net/?retryWrites=true&w=majority").res
 
-food_mak = 40
-food_povar = 90
-food_pekar = 70
-food_fermer = 200
+food_mak = 20
+food_povar = 45
+food_pekar = 35
+food_fermer = 100
 
 
 # Чтобы не слетали импорты
@@ -792,12 +792,7 @@ async def leave_citizen(message):
                 f'{await username_2(user_data["citizen_country"], president_data["firstname"])}, у вас больше нет этого гражданина {await username(message)}',
                 parse_mode='HTML')
         else:
-            try:
-                await message.answer(f'{await username(message)}, сначала окончите работу!', parse_mode='HTML')
-            except:
-                database.users.update_one({'id': message.from_user.id}, {'$set': {'working': False}})
-                database.users.update_one({'id': message.from_user.id}, {'$set': {'job': 'нет'}})
-                await message.answer(f'{await username(message)}, вы покинули страну!', parse_mode='HTML')
+            await message.answer(f'{await username(message)}, сначала окончите работу!', parse_mode='HTML')
 
 
 # /cars Все машины в мире

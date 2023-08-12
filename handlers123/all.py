@@ -1417,6 +1417,11 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
     if 'getjob_' in data_callback:
         job, pressed_user = data_callback.replace('getjob_', '').split('_')
         res_info = res_database.job.find_one({'id': callback.from_user.id})
+        user_info = database.users.find_one({'id': callback.from_user.id})
+        jobs_citizen = ['Автосборщик', 'Строитель', 'Предприниматель']
+        if job in jobs_citizen and user_info['citizen_country'] == 'нет':
+            await callback.message.edit_text(f'{await username(callback)}, для начала вам нужно стать гражданином!')
+            return
         # Проверка нажал ли тот кто вызвал
         if str(callback.from_user.id)[-2::] != pressed_user:
             await callback.answer(f'Это предназначено не вам!')

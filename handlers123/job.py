@@ -9,10 +9,10 @@ from dateutil import parser
 import random
 import asyncio
 
-food_mak = 40
-food_povar = 90
-food_pekar = 70
-food_fermer = 200
+food_mak = 20
+food_povar = 45
+food_pekar = 35
+food_fermer = 100
 
 
 # /work Работать
@@ -22,7 +22,6 @@ async def work(message: types.Message):
     user_info = database.users.find_one({'id': user_id})
     res_job_info = res_database.job.find_one({'id': user_id})
     if user_info["job"] != 'нет':  # Если есть работа
-        print(user_info)
         if res_job_info and res_job_info['working']:
             # Получение переменных с строки
             tz = pytz.timezone('Etc/GMT-3')
@@ -188,7 +187,6 @@ async def leavejob(message):
 
     user_info = database.users.find_one({'id': user_id})
     res_info = res_database.job.find_one({'id': user_id})
-    print(f'evol_{res_info}')
     # Если нигде не работаю
     if res_info is None:
         await message.answer(f'{await username(message)}, вы нигде не работаете!', parse_mode='HTML')
@@ -212,12 +210,14 @@ async def leavejob(message):
                 await message.answer(f'{await username(message)}, для начала вам нужно уйти со стройки!\n'
                                      f'❗️ Чтобы уйти - /leave_build',
                                      parse_mode='HTML')
+                return
         if user_info['job'] == 'Автосборщик':
             boss = database.autocreater_work.find_one({'id': message.from_user.id})
             if boss is not None:
                 await message.answer(f'{await username(message)}, для начала вам нужно уйти с автосборки!\n'
                                      f'❗️ Чтобы уйти - /leave_creater',
                                      parse_mode='HTML')
+                return
         # обновленние данных в БД
         database.users.update_one({'id': user_id}, {'$set': {'job': 'нет'}})
         res_database.job.delete_one({'id': user_id})
