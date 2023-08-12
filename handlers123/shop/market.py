@@ -37,22 +37,26 @@ class Marketplace:
 
 
 
-    async def sale_oil(data) -> str:
+    async def sale_oil(data: dict) -> str:
         marketplace_collection.insert_one({
             'id': data['id'],
             'product': 'oil',
             'price': data['price'],
             'quantity': data['quantity']
         })
+        user = database.users.find_one({'id': data['id']})
+        database.users.update_one({'id': data['id']}, {'$set': {'oil': int(user['oil']) - int(data['quantity'])}})
         return 'Обьявление успешно добавлено'
 
-    async def sale_food(data: dict) -> None:
+    async def sale_food(data: dict) -> str:
         marketplace_collection.insert_one({
             'id': data['id'],
             'product': 'food',
             'price': data['price'],
             'quantity': data['quantity']
         })
+        user = database.users.find_one({'id': data['id']})
+        database.users.update_one({'id': data['id']}, {'$set': {'oil': int(user['food']) - int(data['quantity'])}})
         print('Обьявление успешно добавлено')
 
     async def sale_car(message: types.Message, price, quantity, name_car) -> str:
@@ -110,7 +114,7 @@ async def market_sale_food(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.price)
 async def market_sale_food_price(message: types.Message, state: FSMContext):
-    await message.answer('готово')
+    await message.answer('Готово, ресурсы списаны с вашего счета, деньги поступят когда другой пользователь приобретёт ваш товар')
     async with state.proxy() as data:
         data['price'] =  int(message.text)
         data['id'] = message.from_user.id
@@ -145,7 +149,7 @@ async def market_sale_oil(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.price)
 async def market_sale_oil_price(message: types.Message, state: FSMContext):
-    await message.answer('готово')
+    await message.answer('Готово, ресурсы списаны с вашего счета, деньги поступят когда другой пользователь приобретёт ваш товар')
     async with state.proxy() as data:
         data['price'] = int(message.text)
         data['id'] = message.from_user.id 

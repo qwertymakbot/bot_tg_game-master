@@ -1468,7 +1468,8 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         categories_kb = InlineKeyboardMarkup(row_width=1)
         sale_btn = InlineKeyboardButton(text='Продать', callback_data='marketsale_')
         buy_btn = InlineKeyboardButton(text='Купить', callback_data='marketbuy_')
-        categories_kb.add(sale_btn, buy_btn)
+        seller_btn = InlineKeyboardButton(text='Мои обьявления', callback_data='market_my_ads_')
+        categories_kb.add(sale_btn, buy_btn, seller_btn)
         await callback.message.edit_text(text='Выберите действие:', reply_markup=categories_kb)
         
     if 'marketsale_' in data_callback:
@@ -1488,8 +1489,27 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
         kb.add(oil, food, car, back)
         await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
-  
-        
+    #if 'market_my_ads_' in data_callback:
+     #   kb=InlineKeyboardMarkup()
+     #   del_btn = InlineKeyboardButton(text='Удалить', callback_data='market_my_ads_delete_add')
+     #   next_btn = InlineKeyboardButton(text='Следующее', callback_data='market_my_ads_next_add')
+      #  kb.row(del_btn, next_btn)
+       # user_ads_list = list(res_database.marketplace.find({'id': callback.from_user.id}))
+        #page = len(user_ads_list)
+        #if 'market_my_ads_next_add' in data_callback:
+        #        page+=1
+        #for number in range(page):
+            #if 'market_my_ads_next_add' in data_callback:
+             #   page+=1
+            #else:    
+          #  item = user_ads_list[number-1]
+           # await callback.message.edit_text(text=f'{number}\n'
+            #                                          f'Товар:{item["product"]}\n'
+             #                                         f'Количество:{item["quantity"]}\n'
+              #                                        f'Цена:{item["price"]}\n', reply_markup=kb)
+            
+            
+            #break
         
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПРОДАЖА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'sell_bus_' in data_callback:
