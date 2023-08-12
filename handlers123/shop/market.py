@@ -40,7 +40,7 @@ class Marketplace:
 
     async def sale_oil(data: dict) -> str:
         marketplace_collection.insert_one({
-            '_id': random.randint(10000000),
+            '_id': random.randint(0,10000000),
             'id': data['id'],
             'product': 'oil',
             'price': data['price'],
@@ -52,7 +52,7 @@ class Marketplace:
 
     async def sale_food(data: dict) -> str:
         marketplace_collection.insert_one({
-            '_id': random.randint(10000000),
+            '_id': random.randint(0,10000000),
             'id': data['id'],
             'product': 'food',
             'price': data['price'],
