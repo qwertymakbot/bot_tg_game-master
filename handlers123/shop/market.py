@@ -27,38 +27,43 @@ class MarketplaceStatesSaleOil(StatesGroup):
 
 class MarketplaceStatesSaleCar(StatesGroup):
 
-    quantity = State()
+    car_name = State()
     price = State()
 
 class Marketplace:
     def __init__(self):
         ...
 
-    async def sale_oil(self, callback: types.CallbackQuery, price, quantity) -> str:
+
+
+
+    async def sale_oil(data) -> str:
+
+
         marketplace_collection.insert_one({
             'id': callback.from_user.id,
             'product': 'oil',
             'price': price,
-            'volume': quantity
+            'quantity': quantity
         })
         return 'Обьявление успешно добавлено'
 
-    async def sale_food(self, callback: types.CallbackQuery, price, quantity) -> str:
+    async def sale_food(data: dict) -> None:
         marketplace_collection.insert_one({
-            'id': callback.from_user.id,
+            'id': data['id'],
             'product': 'food',
-            'price': price,
-            'volume': quantity
+            'price': data['price'],
+            'quantity': data['quantity']
         })
-        return 'Обьявление успешно добавлено'
+        print('Обьявление успешно добавлено')
 
-    async def sale_car(self, callback: types.CallbackQuery, price, quantity, name_car) -> str:
+    async def sale_car(message: types.Message, price, quantity, name_car) -> str:
         marketplace_collection.insert_one({
-            'id': callback.from_user.id,
+            'id': message.from_user.id,
             'product': 'car',
             'name_car': name_car,
             'price': price,
-            'volume': quantity
+            'quantity': quantity
         })
         return 'Обьявление успешно добавлено'
 
@@ -82,11 +87,20 @@ class Marketplace:
 
 
 @dp.callback_query_handler(text='marketseller_sale_food', state=None)
-async def start_sale(callback: types.CallbackQuery):
+async def start_sale_food(callback: types.CallbackQuery):
     user_info = database.users.find_one({'id': callback.from_user.id})
     user_food = int(user_info['food'])
+    
     await callback.message.answer(text=f'Укажи количество еды (доступно:{user_food}кг)')
     await MarketplaceStatesSaleFood.quantity.set()
+
+
+@dp.callback_query_handler(text='marketseller_sale_oil', state=None)
+async def start_sale_oil(callback: types.CallbackQuery):
+    user_info = database.users.find_one({'id': callback.from_user.id})
+    user_oil = int(user_info['oil'])
+    await callback.message.answer(text=f'Укажи количество топлива (доступно:{user_oil}л)')
+    await MarketplaceStatesSaleOil.quantity.set()
 
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.quantity)
@@ -102,23 +116,67 @@ async def market_sale_food(message: types.Message, state: FSMContext):
     else:
         await message.answer('ты что-то сделал не так')
         await state.finish()
-    print(data['quantity'])
 
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.price)
-async def market_sale_food(message: types.Message, state: FSMContext):
+async def market_sale_food_price(message: types.Message, state: FSMContext):
     await message.answer('готово')
     async with state.proxy() as data:
         data['price'] =  int(message.text)
-        await load_data(data)
-        print(data)
+        data['id'] = message.from_user.id
+        data=await load_data(data)
+        await Marketplace.sale_food(data=data)
         await state.finish()
+    print(list(marketplace_collection.find()))
+
+
+@dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.quantity)
+async def market_sale_food(message: types.Message, state: FSMContext):
+    user_info = database.users.find_one({'id': message.from_user.id})
+    user_oil = int(user_info['oil'])
+    data_oil = int(message.text)
+    if user_oil >= data_oil:
+        await message.answer('теперь цену')
+        await MarketplaceStatesSaleFood.price.set()
+        async with state.proxy() as data:
+            data['quantity'] = int(message.text)
+    else:
+        await message.answer('ты что-то сделал не так')
+        await state.finish()
+    
+
+
+@dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.price)
+async def market_sale_food_price(message: types.Message, state: FSMContext):
+    await message.answer('готово')
+    async with state.proxy() as data:
+        data['price'] =  int(message.text)
+        data['id'] = message.from_user.id 
+        d=await load_data(data)
+    await Marketplace.sale_oil(d)
+    await state.finish()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 async def load_data(data: dict):
     d = {
         'price': data['price'],
-        'quantity': data['quantity']
+        'quantity': data['quantity'],
+        'id': data['id']
     }
     print(d)
     return d
