@@ -38,13 +38,11 @@ class Marketplace:
 
 
     async def sale_oil(data) -> str:
-
-
         marketplace_collection.insert_one({
-            'id': callback.from_user.id,
+            'id': data['id'],
             'product': 'oil',
-            'price': price,
-            'quantity': quantity
+            'price': data['price'],
+            'quantity': data['quantity']
         })
         return 'Обьявление успешно добавлено'
 
@@ -152,7 +150,7 @@ async def market_sale_oil_price(message: types.Message, state: FSMContext):
         data['price'] = int(message.text)
         data['id'] = message.from_user.id 
         d = await load_data(data)
-    await Marketplace.sale_oil(data=d)
+        await Marketplace.sale_oil(data=d)
     await state.finish()
 
 
