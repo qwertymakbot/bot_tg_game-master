@@ -117,7 +117,7 @@ async def market_sale_food(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.price)
 async def market_sale_food_price(message: types.Message, state: FSMContext):
-    await message.answer('Готово, ресурсы списаны с вашего счета, деньги поступят когда другой пользователь приобретёт ваш товар')
+    await message.answer('Готово, ресурсы списаны с вашего счета, деньги поступят когда другой пользователь приобретёт ваш товар,  при удалении объявления ресурсы не вернутся')
     async with state.proxy() as data:
         data['price'] =  int(message.text)
         data['id'] = message.from_user.id
@@ -152,7 +152,7 @@ async def market_sale_oil(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.price)
 async def market_sale_oil_price(message: types.Message, state: FSMContext):
-    await message.answer('Готово, ресурсы списаны с вашего счета, деньги поступят когда другой пользователь приобретёт ваш товар')
+    await message.answer('Готово, ресурсы списаны с вашего счета, деньги поступят когда другой пользователь приобретёт ваш товар, при удалении объявления ресурсы не вернутся')
     async with state.proxy() as data:
         data['price'] = int(message.text)
         data['id'] = message.from_user.id 

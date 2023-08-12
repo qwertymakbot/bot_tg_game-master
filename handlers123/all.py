@@ -1499,8 +1499,6 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         page = int(page[0])
         page-=1
         user_ads_list = list(res_database.marketplace.find({'id': callback.from_user.id}))
-        print(11111)
-        print(page)
         #kb=InlineKeyboardMarkup()
         #del_btn = InlineKeyboardButton(text='Удалить', callback_data=f'market_my_ads_delete_add{}')
         #next_btn = InlineKeyboardButton(text='Следующее', callback_data=f'market_my_ads_{page}')
@@ -1508,7 +1506,7 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         item = user_ads_list[page-1]
         if page!=0:
             kb=InlineKeyboardMarkup()
-            del_btn = InlineKeyboardButton(text='Удалить', callback_data=f'market_delete_add_{item["_id"]}')
+            del_btn = InlineKeyboardButton(text='Удалить', callback_data=f'market_delete_ad_{item["_id"]}')
             next_btn = InlineKeyboardButton(text='Следующее', callback_data=f'market_my_ads_{page}')
             kb.row(del_btn, next_btn) 
             await callback.message.edit_text(text=
@@ -1519,11 +1517,13 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
             await callback.answer('Это последняя страница')
             page = len(user_ads_list)
 
-    if 'market_delete_add_' in data_callback:
-        adds_id = data_callback.replace('market_delete_add_', '').split()
-        adds_id = adds_id[0]
+    if 'market_delete_ad_' in data_callback:
+        adds_id = data_callback.replace('market_delete_ad_', '').split()
+        adds_id = int(adds_id[0])
+        ad_info = res_database.marketplace.find_one({'_id': adds_id})
+    
         res_database.marketplace.delete_one({'_id': adds_id})
-        print(res_database.marketplace.find_one({'_id': adds_id}))
+        res_database.marketplace.find_one({'_id': adds_id})
         await callback.answer('Объявление удалено, обновите магазин написав команду Магазин')
             
             
