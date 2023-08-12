@@ -960,11 +960,11 @@ async def get_game_data(message):
     if rate_money <= amount_money:
         amount_score = await bot.send_dice(message.chat.id, emoji='⚽')
         if amount_score.dice.value == 3:
-            await win(message, rate_money, amount_money, 0.5, user_id)
+            await win(message, rate_money, amount_money, 0.25, user_id)
         elif amount_score.dice.value == 4:
-            await win(message, rate_money, amount_money, 0.75, user_id)
+            await win(message, rate_money, amount_money, 0.25, user_id)
         elif amount_score.dice.value == 5:
-            await win(message, rate_money, amount_money, 1, user_id)
+            await win(message, rate_money, amount_money, 0.45, user_id)
         else:
             await lose(message, amount_money, rate_money, user_id)
     else:
@@ -1051,6 +1051,8 @@ async def darts(message):
         if amount_score.dice.value == 6:
             await win(message, rate_money, amount_money, 2, user_id)
         elif amount_score.dice.value == 5:
+            await win(message, rate_money, amount_money, 1, user_id)
+        elif amount_score.dice.value == 4:
             await win(message, rate_money, amount_money, 0.5, user_id)
         else:
             await lose(message, amount_money, rate_money, user_id)
@@ -1081,6 +1083,8 @@ async def bowling(message):
             await win(message, rate_money, amount_money, 2, user_id)
         elif amount_score.dice.value == 5:
             await win(message, rate_money, amount_money, 1, user_id)
+        elif amount_score.dice.value == 4:
+            await win(message, rate_money, amount_money, 0.5, user_id)
         else:
             await lose(message, amount_money, rate_money, user_id)
     else:

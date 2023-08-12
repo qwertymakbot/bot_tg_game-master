@@ -1754,6 +1754,89 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         else:
             await callback.answer('Это предназначено не вам!')
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼УЙТИ СО СТРОЙКИ🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
+    """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПОИСК РАБОТЫ АВТОСБОРЩИК🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
+    if 'creater_nazad_' in data_callback:
+        user_id, page = data_callback.replace('creater_nazad_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            if int(page) != 0:
+                user_info = database.users.find_one({'id': callback.from_user.id})
+                all_bus = list(database.users_bus.find(
+                    {'$and': [{'name': 'Сборка авто'}, {'status': 'work'}, {'country': user_info['citizen_country']}]}))
+                new_list_bus = []
+                for bus in all_bus:
+                    all_autocreaters = list(database.autocreater_work.find({'boss': bus['boss']}))
+                    if len(all_autocreaters) < bus['work_place']:
+                        new_list_bus.append(bus)
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'creater_nazad_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'creater_vper_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                accept = InlineKeyboardButton('Устроиться ✅',
+                                              callback_data=f'creater_ustr_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                otmena = InlineKeyboardButton('Отмена ❌', callback_data=f'creater_otmena_')
+                key.add(but_nazad, accept, but_vpered, otmena)
+                await callback.message.edit_text(f'Бизнес: {new_list_bus[int(page) - 1]["name"]} {new_list_bus[int(page) - 1]["product"]}\n'
+                                       f'Владелец: {await username(callback)}\n'
+                                       f'Автосборщиков: {len(list(database.autocreater_work.find({"boss": new_list_bus[int(page) - 1]["boss"]})))}/{new_list_bus[int(page) - 1]["work_place"]}\n\n'
+                                       f'Страница: {int(page)}/{len(new_list_bus)}', reply_markup=key, parse_mode='HTML')
+            else:
+                await callback.answer('Это последняя страница')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'creater_vper_' in data_callback:
+        user_id, page = data_callback.replace('creater_vper_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            all_bus = list(database.users_bus.find(
+                {'$and': [{'name': 'Сборка авто'}, {'status': 'work'}, {'country': user_info['citizen_country']}]}))
+            new_list_bus = []
+            for bus in all_bus:
+                all_autocreaters = list(database.autocreater_work.find({'boss': bus['boss']}))
+                if len(all_autocreaters) < bus['work_place']:
+                    new_list_bus.append(bus)
+            if int(page) + 1 != len(new_list_bus):
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'creater_nazad_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'creater_vper_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                accept = InlineKeyboardButton('Устроиться ✅',
+                                              callback_data=f'creater_ustr_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                otmena = InlineKeyboardButton('Отмена ❌', callback_data=f'creater_otmena_')
+                key.add(but_nazad, accept, but_vpered, otmena)
+                await callback.message.edit_text(
+                    f'Бизнес: {new_list_bus[int(page) + 1]["name"]} {new_list_bus[int(page) + 1]["product"]}\n'
+                    f'Владелец: {await username(callback)}\n'
+                    f'Автосборщиков: {len(list(database.autocreater_work.find({"boss": new_list_bus[int(page) + 1]["boss"]})))}/{new_list_bus[int(page) + 1]["work_place"]}\n\n'
+                    f'Страница: {int(page) +2 }/{len(new_list_bus)}', reply_markup=key, parse_mode='HTML')
+            else:
+                await callback.answer('Это последняя страница')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'creater_ustr_' in data_callback:
+        user_id, page = data_callback.replace('creater_ustr_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            all_bus = list(database.users_bus.find(
+                {'$and': [{'name': 'Сборка авто'}, {'status': 'work'}, {'country': user_info['citizen_country']}]}))
+            new_list_bus = []
+            for bus in all_bus:
+                all_autocreaters = list(database.autocreater_work.find({'boss': bus['boss']}))
+                if len(all_autocreaters) < bus['work_place']:
+                    new_list_bus.append(bus)
+            database.autocreater_work.insert_one({'boss': new_list_bus[int(page)]["boss"],
+                                                  'creater': callback.from_user.id})
+            await callback.message.edit_text(f'{await username(callback)}, вы успешно устроились на {new_list_bus[int(page)]["name"]} {new_list_bus[int(page)]["product"]}')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'creater_otmena' in data_callback:
+        user_id = data_callback.replace('creater_otmena', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            await callback.message.delete()
+        else:
+            await callback.answer('Это предназначено не вам!')
+    '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПОИСК РАБОТЫ АВТОСБОРЩИК🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     await bot.answer_callback_query(callback.id)
 
 """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
