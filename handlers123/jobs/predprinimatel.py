@@ -13,15 +13,15 @@ from bot import username
 async def mybus(message: types.Message):
     # президент купил страну сразу гражданин
     await check_user(message)
-    bus_data = database.users_bus.find_one({'id': message.from_user.id})
+    bus_data = database.users_bus.find_one({'boss': message.from_user.id})
     if bus_data is None:
         await message.answer(f'{await username(message)}, у вас нет бизнеса!', parse_mode='HTML')
     else:
-        work_people = database.autocreater_work.find_one({'boss': message.from_user.id})
+        work_people = list(database.autocreater_work.find({'boss': message.from_user.id}))
         await message.answer(f'{await username(message)}, ваш бизнес:\n'
                              f'™️ Название: {bus_data["name"]}\n'
                              f'🛠 Что производит: {bus_data["product"]}\n'
-                             f'👨‍🏫 Автосборщиков: {len(work_people["work_place"])} из {bus_data["work_place"]} чел.\n'
+                             f'👨‍🏫 Автосборщиков: {len(work_people)} из {bus_data["work_place"]} чел.\n'
                              f'🕐 Время производства 1 единицы продукции: {bus_data["time_to_create"]} минут\n\n'
                              f'❗️ Для продажи бизнеса введите /sell_bus', parse_mode='HTML')
 
@@ -32,7 +32,7 @@ async def sell_bus(message: types.Message):
     user_info = database.users.find_one({'id': message.from_user.id})
     if user_info['job'] == 'Предприниматель':
         # проверка есть ли бизнес уже
-        bus_info = database.users_bus.find_one({'id': message.from_user.id})
+        bus_info = database.users_bus.find_one({'boss': message.from_user.id})
         if bus_info is not None:
             key = types.InlineKeyboardMarkup()
             but_yes = types.InlineKeyboardButton(text='Продать',
@@ -79,7 +79,7 @@ async def build_bus(message: types.Message):
                 tz = pytz.timezone('Etc/GMT-3')
                 scheduler.add_job(end_build_bus, "date",
                                   run_date=await add_time_min(1440),
-                                  args=message.from_user.id, id=f'{message.from_user.id}_build', timezone=tz)
+                                  args=(message.from_user.id,), id=f'{message.from_user.id}_build', timezone=tz)
                 await bot.send_message(message.chat.id,
                                        f'{await username(message)}, начал строительство объекта {users_bus["name"]} {users_bus["product"]}\n'
                                        f'❗️ Стройка закончится через 24 часа ❗️', parse_mode='HTML')
@@ -105,7 +105,7 @@ async def build_bus(message: types.Message):
         else:
             await bot.send_message(message.chat.id, f'{await username(message)}, вы уже построили свой бизнес!', parse_mode='HTML')
     else:
-        await bot.send_message(
+        await bot.send_message(message.chat.id,
             f'{await username_2(message.from_user.id, message.from_user.first_name)}, данная команда доступна только Предпринимателю',
             parse_mode='HTML')
 

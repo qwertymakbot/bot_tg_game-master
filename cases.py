@@ -119,7 +119,7 @@ class Cases:
                     return [exp, 'exp']
 
     async def open_middle_case(self):
-        prizes = ['car', 'money', 'exp', 'money', 'exp', 'money', 'exp']
+        prizes = ['money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp']
         prize = random.choice(prizes)
         match prize:
             case 'money':
@@ -211,7 +211,7 @@ async def little_case(callback: types.CallbackQuery):
     db = Database()
     case = Cases()
     prize = await case.open_little_case()
-    await db.give_prize_in_little_case(callback=callback, prize=prize)
+   # await db.give_prize_in_little_case(callback=callback, prize=prize)
     await bot.send_message(callback.message.chat.id, text=f'{callback.from_user.first_name} купил маленький кейс за 10000$')
     await bot.send_dice(callback.message.chat.id)
     await asyncio.sleep(4)
@@ -222,7 +222,7 @@ async def middle_case(callback: types.CallbackQuery):
     db = Database()
     case = Cases()
     prize = await case.open_middle_case()
-    await db.give_prize_in_middle_case(callback=callback, prize=prize)
+    #await db.give_prize_in_middle_case(callback=callback, prize=prize)
     await callback.message.answer(text=f'{callback.from_user.first_name} купил средний кейс за 100000$')
     await bot.send_dice(callback.message.chat.id)
     await asyncio.sleep(4)
@@ -236,7 +236,7 @@ async def big_case(callback: types.CallbackQuery):
     db = Database()
     case = Cases()
     prize = await case.open_big_case()
-    await db.give_prize_in_big_case(callback=callback, prize=prize)
+    #await db.give_prize_in_big_case(callback=callback, prize=prize)
     await callback.message.answer(text=f'{callback.from_user.first_name} Купил большой кейс за 150000$')
     await bot.send_dice(callback.message.chat.id)
     await asyncio.sleep(4)

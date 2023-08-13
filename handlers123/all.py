@@ -1465,70 +1465,149 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼КЕЙСЫ🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     '''marketplace'''
     if 'marketplace_' in data_callback:
-        user_ads_list = list(res_database.marketplace.find({'id': callback.from_user.id}))
-        page = len(user_ads_list)
-        print(0000000)
         categories_kb = InlineKeyboardMarkup(row_width=1)
-        sale_btn = InlineKeyboardButton(text='Продать', callback_data='marketsale_')
-        buy_btn = InlineKeyboardButton(text='Купить', callback_data='marketbuy_')
-        seller_btn = InlineKeyboardButton(text='Мои объявления', callback_data=f'market_my_ads_{page}')
+        sale_btn = InlineKeyboardButton(text='Продать', callback_data=f'marketsale_{str(callback.from_user.id)[-3::]}')
+        buy_btn = InlineKeyboardButton(text='Купить', callback_data=f'marketbuy_{str(callback.from_user.id)[-3::]}')
+        seller_btn = InlineKeyboardButton(text='Мои объявления',
+                                          callback_data=f'market_my_ads_watch_{str(callback.from_user.id)[-3::]}')
         categories_kb.add(sale_btn, buy_btn, seller_btn)
         await callback.message.edit_text(text='Выберите действие:', reply_markup=categories_kb)
-        
+
     if 'marketsale_' in data_callback:
-        kb = InlineKeyboardMarkup(row_width=1)
-        oil = InlineKeyboardButton(text='Топливо', callback_data='marketseller_sale_oil')
-        food = InlineKeyboardButton(text='Еда', callback_data='marketseller_sale_food')
-        car = InlineKeyboardButton(text='Автомобиль', callback_data='marketseller_sale_car')
-        back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
-        kb.add(oil, food, car, back)
-        await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
+        user_id = data_callback.replace('marketsale_', '')
+        if str(callback.from_user.id)[-3::] == user_id:
+            kb = InlineKeyboardMarkup(row_width=1)
+            oil = InlineKeyboardButton(text='Топливо', callback_data='marketseller_sale_oil')
+            food = InlineKeyboardButton(text='Еда', callback_data='marketseller_sale_food')
+            # car = InlineKeyboardButton(text='Автомобиль', callback_data='marketseller_sale_car')
+            back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
+            kb.add(oil, food, back)
+            await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
+        else:
+            await callback.answer('Это предназначено не вам!')
 
     if 'marketbuy_' in data_callback:
-        kb = InlineKeyboardMarkup(row_width=1)
-        oil = InlineKeyboardButton(text='Топливо', callback_data='marketbuyer_buy_oil')
-        food = InlineKeyboardButton(text='Еда', callback_data='marketbuyer_buy_food')
-        car = InlineKeyboardButton(text='Автомобиль', callback_data='marketbuyer_buy_car')
-        back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
-        kb.add(oil, food, car, back)
-        await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)        
-
-    
-    if 'market_my_ads_' in data_callback:
-        page = data_callback.replace('market_my_ads_', '').split()
-        page = int(page[0])
-        page-=1
-        user_ads_list = list(res_database.marketplace.find({'id': callback.from_user.id}))
-        #kb=InlineKeyboardMarkup()
-        #del_btn = InlineKeyboardButton(text='Удалить', callback_data=f'market_my_ads_delete_add{}')
-        #next_btn = InlineKeyboardButton(text='Следующее', callback_data=f'market_my_ads_{page}')
-        #kb.row(del_btn, next_btn) 
-        item = user_ads_list[page-1]
-        if page!=0:
-            kb=InlineKeyboardMarkup()
-            del_btn = InlineKeyboardButton(text='Удалить', callback_data=f'market_delete_ad_{item["_id"]}')
-            next_btn = InlineKeyboardButton(text='Следующее', callback_data=f'market_my_ads_{page}')
-            kb.row(del_btn, next_btn) 
-            await callback.message.edit_text(text=
-                                                      f'Товар:{item["product"]}\n'
-                                                      f'Количество:{item["quantity"]}\n'
-                                                      f'Цена:{item["price"]}\n', reply_markup=kb)
+        user_id = data_callback.replace('marketbuy_', '')
+        if str(callback.from_user.id)[-3::] == user_id:
+            kb = InlineKeyboardMarkup(row_width=1)
+            oil = InlineKeyboardButton(text='Топливо', callback_data=f'marketbuyer_buy_oil_{str(callback.from_user.id)[-3::]}')
+            food = InlineKeyboardButton(text='Еда', callback_data=f'marketbuyer_buy_food_{str(callback.from_user.id)[-3::]}')
+            # car = InlineKeyboardButton(text='Автомобиль', callback_data='marketbuyer_buy_car')
+            back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
+            kb.add(oil, food, back)
+            await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
         else:
-            await callback.answer('Это последняя страница')
-            page = len(user_ads_list)
+            await callback.answer('Это предназначено не вам!')
+    # Покупка
+    if 'marketbuyer_buy_' in data_callback:
+        product, user_id = data_callback.replace('marketbuyer_buy_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            ...
+        else:
+            await callback.answer('Это предназначено не вам!')
 
-    if 'market_delete_ad_' in data_callback:
-        adds_id = data_callback.replace('market_delete_ad_', '').split()
-        adds_id = int(adds_id[0])
-        ad_info = res_database.marketplace.find_one({'_id': adds_id})
-    
-        res_database.marketplace.delete_one({'_id': adds_id})
-        res_database.marketplace.find_one({'_id': adds_id})
-        await callback.answer('Объявление удалено, обновите магазин написав команду Магазин')
-            
-            
-            
-        
+
+    # Мои объявления
+    if 'market_my_ads_watch_' in data_callback:
+        user_id = data_callback.replace('market_my_ads_watch_', '')
+        if str(callback.from_user.id)[-3::] == user_id:
+            all_ads = list(res_database.marketplace.find({'id': callback.from_user.id}))
+            if all_ads:
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'market_my_ads_nazad_{str(callback.from_user.id)[-3::]}_0')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'market_my_ads_vpered_{str(callback.from_user.id)[-3::]}_0')
+                but_otmena = InlineKeyboardButton('Отмена',
+                                                  callback_data=f'market_my_ads_otmena_{str(callback.from_user.id)[-3::]}')
+                but_buy = InlineKeyboardButton('Убрать ✅',
+                                               callback_data=f'market_my_ads_buy_{str(callback.from_user.id)[-3::]}_0')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                await callback.message.edit_text(f'{await username(callback)}, ваше объявление:\n'
+                                                 f'Продукт: {all_ads[0]["product"]}\n'
+                                                 f'Количество: {all_ads[0]["quantity"]}\n'
+                                                 f'Цена: {all_ads[0]["price"]}\n\n'
+                                                 f'Страница: 1/{len(all_ads)}', parse_mode='HTML', reply_markup=key)
+            else:
+                await callback.message.edit_text(f'{await username(callback)}, у вас нет объявлений!', parse_mode='HTML')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'market_my_ads_nazad_' in data_callback:
+        user_id, page = data_callback.replace('market_my_ads_nazad_', '').split('_')
+
+        if str(callback.from_user.id)[-3::] == user_id:
+            if int(page) != 0:
+                all_ads = list(res_database.marketplace.find({'id': callback.from_user.id}))
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'market_my_ads_nazad_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'market_my_ads_vpered_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_otmena = InlineKeyboardButton('Отмена',
+                                                  callback_data=f'market_my_ads_otmena_{str(callback.from_user.id)[-3::]}')
+                but_buy = InlineKeyboardButton('Убрать ✅',
+                                               callback_data=f'market_my_ads_del_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                await callback.message.edit_text(f'{await username(callback)}, ваше объявление:\n'
+                                                 f'Продукт: {all_ads[int(page) - 1]["product"]}\n'
+                                                 f'Количество: {all_ads[int(page) - 1]["quantity"]}\n'
+                                                 f'Цена: {all_ads[int(page) - 1]["price"]}\n\n'
+                                                 f'Страница: {int(page)}/{len(all_ads)}', parse_mode='HTML',
+                                                 reply_markup=key)
+            else:
+                await callback.answer('Это последняя страница!')
+        else:
+            await callback.answer('Это предназначено не вам!')
+
+    if 'market_my_ads_vpered_' in data_callback:
+        user_id, page = data_callback.replace('market_my_ads_vpered_', '').split('_')
+        all_ads = list(res_database.marketplace.find({'id': callback.from_user.id}))
+        if str(callback.from_user.id)[-3::] == user_id:
+            if int(page) + 1 < len(all_ads):
+
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'market_my_ads_nazad_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'market_my_ads_vpered_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_otmena = InlineKeyboardButton('Отмена',
+                                                  callback_data=f'market_my_ads_otmena_{str(callback.from_user.id)[-3::]}')
+                but_buy = InlineKeyboardButton('Убрать ✅',
+                                               callback_data=f'market_my_ads_del_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                await callback.message.edit_text(f'{await username(callback)}, ваше объявление:\n'
+                                                 f'Продукт: {all_ads[int(page) + 1]["product"]}\n'
+                                                 f'Количество: {all_ads[int(page) + 1]["quantity"]}\n'
+                                                 f'Цена: {all_ads[int(page) + 1]["price"]}\n\n'
+                                                 f'Страница: {int(page) + 2}/{len(all_ads)}', parse_mode='HTML',
+                                                 reply_markup=key)
+            else:
+                await callback.answer('Это последняя страница!')
+        else:
+            await callback.answer('Это предназначено не вам!')
+
+    if 'market_my_ads_del_' in data_callback:
+        user_id, page = data_callback.replace('market_my_ads_del_', '').split('_')
+
+        if str(callback.from_user.id)[-3::] == user_id:
+            all_ads = list(res_database.marketplace.find({'id': callback.from_user.id}))
+            res_database.marketplace.delete_one(
+                {'$and': [{'id': all_ads[int(page)]['id']}, {'product': all_ads[int(page)]['product']}]})
+
+            if all_ads[int(page)]['product'] == 'food' or all_ads[int(page)]['product'] == 'oil':
+                user_info = database.users.find_one({'id': callback.from_user.id})
+                database.users.update_one({'id': user_id},{'$set':{all_ads[int(page)]['product']: user_info[all_ads[int(page)]['product']] +
+                                                                          all_ads[int(page)]['quantity']}})
+            await callback.message.edit_text(f'{await username(callback)}, вы успешно сняли объявление!')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'market_my_ads_otmena_' in data_callback:
+        user_id = data_callback.replace('market_my_ads_del_', '')
+        if str(callback.from_user.id)[-3::] == user_id:
+            await callback.message.delete()
+        else:
+            await callback.answer('Это предназначено не вам!')
+
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПРОДАЖА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'sell_bus_' in data_callback:
         user_id, cost = data_callback.replace('sell_bus_', '').split('_')
@@ -1555,12 +1634,13 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПРОДАЖА БИЗНЕСА🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽ПОКУПКА БИЗНЕСА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'buybus_naz_' in data_callback:
-        user_id, page = data_callback.replace('buybus_naz_','').split('_')
+        user_id, page = data_callback.replace('buybus_naz_', '').split('_')
         if str(callback.from_user.id)[-3::] == user_id:
             if int(page) != 0:
                 user_info = database.users.find_one({'id': callback.from_user.id})
                 key = InlineKeyboardMarkup(row_width=3)
-                but_nazad = InlineKeyboardButton('◀️', callback_data=f'buybus_naz_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'buybus_naz_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
                 but_vpered = InlineKeyboardButton('▶️',
                                                   callback_data=f'buybus_vper_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
                 but_buy = InlineKeyboardButton('Купить 💲',
@@ -1570,11 +1650,11 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                 key.add(but_nazad, but_buy, but_vpered, but_otmena)
                 bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
                 await callback.message.edit_text(f'Страна производства: {bus_data[int(page) - 1]["country"]}\n'
-                                                        f'Что производит: {bus_data[int(page) - 1]["product"]}\n'
-                                                        f'🖤 Топлива: {bus_data[int(page) - 1]["oil"]} л\n'
-                                                        f'🍔 Еда: {bus_data[int(page) - 1]["food"]} кг\n'
-                                                        f'💵 Цена: {bus_data[int(page) - 1]["cost"]} $\n\n'
-                                                        f'Страница {int(page)}/{len(bus_data)}', reply_markup=key)
+                                                 f'Что производит: {bus_data[int(page) - 1]["product"]}\n'
+                                                 f'🖤 Топлива: {bus_data[int(page) - 1]["oil"]} л\n'
+                                                 f'🍔 Еда: {bus_data[int(page) - 1]["food"]} кг\n'
+                                                 f'💵 Цена: {bus_data[int(page) - 1]["cost"]} $\n\n'
+                                                 f'Страница {int(page)}/{len(bus_data)}', reply_markup=key)
             else:
                 await callback.answer('Это последняя страница')
         else:
@@ -1593,7 +1673,7 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                 but_buy = InlineKeyboardButton('Купить 💲',
                                                callback_data=f'buybus_buy_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
                 but_otmena = InlineKeyboardButton('Отмена ❌',
-                                                 callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}')
+                                                  callback_data=f'buybus_otm_{str(callback.from_user.id)[-3::]}')
                 key.add(but_nazad, but_buy, but_vpered, but_otmena)
 
                 await callback.message.edit_text(f'Страна производства: {bus_data[int(page) + 1]["country"]}\n'
@@ -1613,15 +1693,19 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
             bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
             # Проверка ресурсов
             if user_info['cash'] < bus_data[int(page)]['cost']:
-                await callback.message.edit_text(f'{await username(callback)}, вам не хватает {bus_data[int(page)]["cost"] - user_info["cash"]} $', parse_mode='HTML')
+                await callback.message.edit_text(
+                    f'{await username(callback)}, вам не хватает {bus_data[int(page)]["cost"] - user_info["cash"]} $',
+                    parse_mode='HTML')
                 return
             if user_info['oil'] < bus_data[int(page)]['oil']:
                 await callback.message.edit_text(
-                    f'{await username(callback)}, вам не хватает {bus_data[int(page)]["oil"] - user_info["oil"]} 🖤', parse_mode='HTML')
+                    f'{await username(callback)}, вам не хватает {bus_data[int(page)]["oil"] - user_info["oil"]} 🖤',
+                    parse_mode='HTML')
                 return
             if user_info['food'] < bus_data[int(page)]['food']:
                 await callback.message.edit_text(
-                    f'{await username(callback)}, вам не хватает {bus_data[int(page)]["food"] - user_info["food"]} 🍔', parse_mode='HTML')
+                    f'{await username(callback)}, вам не хватает {bus_data[int(page)]["food"] - user_info["food"]} 🍔',
+                    parse_mode='HTML')
                 return
             # Снятие ресурсов
             database.users.update_one({'id': callback.from_user.id}, {'$set': {
@@ -1643,7 +1727,9 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                                            'status': 'buy',
                                            'bpay': 0}
                                           )
-            await callback.message.edit_text(f'{await username(callback)}, вы успешно приобрели бизнес {bus_data[int(page)]["name"]} {bus_data[int(page)]["product"]}', parse_mode='HTML')
+            await callback.message.edit_text(
+                f'{await username(callback)}, вы успешно приобрели бизнес {bus_data[int(page)]["name"]} {bus_data[int(page)]["product"]}',
+                parse_mode='HTML')
 
         else:
             await callback.answer('Это предназначено не вам!')
@@ -1660,9 +1746,10 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         if user_id == str(callback.from_user.id)[-3::]:
             bus_info = database.users_bus.find_one({'boss': callback.from_user.id})
             boss_info = database.users.find_one({'id': callback.from_user.id})
-            database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': boss_info['cash'] + round(float(bus_info["bpay"] * 0.5)),
-                                                                               'oil': boss_info['oil']+ bus_info['oil'] * 0.5,
-                                                                               'food': boss_info['food'] + bus_info['food'] * 0.5}})
+            database.users.update_one({'id': callback.from_user.id},
+                                      {'$set': {'cash': boss_info['cash'] + round(float(bus_info["bpay"] * 0.5)),
+                                                'oil': boss_info['oil'] + bus_info['oil'] * 0.5,
+                                                'food': boss_info['food'] + bus_info['food'] * 0.5}})
             builders_info = list(database.builders_work.find({'boss': callback.from_user.id}))
             # Выдача денег строителям\расформирование их
             for builder in builders_info:
@@ -1698,20 +1785,23 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
             if int(page) != 0:
                 user_info = database.users.find_one({'id': callback.from_user.id})
                 key = InlineKeyboardMarkup(row_width=3)
-                but_nazad = InlineKeyboardButton('◀️', callback_data=f'build_naz_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
-                but_vpered = InlineKeyboardButton('▶️', callback_data=f'build_vper_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'build_naz_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'build_vper_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
                 but_ustroitsya = InlineKeyboardButton('Устроиться ✅',
                                                       callback_data=f'build_ustr_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
                 but_otmena = InlineKeyboardButton('Отмена ❌',
                                                   callback_data=f'build_otm_{str(callback.from_user.id)[-3::]}')
                 key.add(but_nazad, but_ustroitsya, but_vpered, but_otmena)
-                all_building = list(database.users_bus.find({'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
+                all_building = list(database.users_bus.find(
+                    {'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
                 all_builders = list(database.builders_work.find({'boss': all_building[int(page) - 1]['boss']}))
                 await callback.message.edit_text('Бизнесы в режиме ожидания:'
-                                       f'{all_building[int(page) - 1]["name"]} {all_building[int(page) - 1]["product"]}\n'
-                                       f'Плата за стройку: {all_building[int(page) - 1]["bpay"]}\n'
+                                                 f'{all_building[int(page) - 1]["name"]} {all_building[int(page) - 1]["product"]}\n'
+                                                 f'Плата за стройку: {all_building[int(page) - 1]["bpay"]}\n'
                                                  f'Строителей на объекте: {len(all_builders)} из {all_building[int(page) - 1]["need_builder"]}\n\n'
-                                       f'Страница {int(page)}/{len(all_building)}', reply_markup=key)
+                                                 f'Страница {int(page)}/{len(all_building)}', reply_markup=key)
             else:
                 await callback.answer('Это последняя страница')
         else:
@@ -1720,7 +1810,8 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         user_id, page = data_callback.replace('build_vper_', '').split('_')
         if str(callback.from_user.id)[-3::] == user_id:
             user_info = database.users.find_one({'id': callback.from_user.id})
-            all_building = list(database.users_bus.find({'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
+            all_building = list(database.users_bus.find(
+                {'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
             if int(page) + 1 != len(all_building):
                 key = InlineKeyboardMarkup(row_width=3)
                 but_nazad = InlineKeyboardButton('◀️',
@@ -1766,11 +1857,12 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                                                  f'Плата за стройку: {all_building[int(page)]["bpay"]}\n'
                                                  f'Строителей на объекте: {len(all_builders)} из {all_building[int(page)]["need_builder"]}\n'
                                                  f'❗️ На этом объекте достигнуто максимальное количество'
-                                                 f'Страница {int(page)+1}/{len(all_building)}', reply_markup=key)
+                                                 f'Страница {int(page) + 1}/{len(all_building)}', reply_markup=key)
                 return
             database.builders_work.insert_one({'boss': all_building[int(page)]['boss'],
                                                'builder': callback.from_user.id})
-            await callback.message.edit_text(f'{await username(callback)}, вы успешно устроились на объект {all_building[int(page)]["name"]} {all_building[int(page)]["product"]}')
+            await callback.message.edit_text(
+                f'{await username(callback)}, вы успешно устроились на объект {all_building[int(page)]["name"]} {all_building[int(page)]["product"]}', parse_mode='HTML')
         else:
             await callback.answer('Это предназначено не вам!')
     if 'build_otm_' in data_callback:
@@ -1787,7 +1879,8 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
             bus_info = database.users_bus.find_one(
                 {'boss': database.builders_work({'builder': callback.from_user.id})['boss']})
             database.builders_work.delete_one({'builder': callback.from_user.id})
-            await callback.message.edit_text(f'{await username(callback.from_user.id)}, покинул стройку бизнеса {bus_info["name"]} {bus_info["product"]}')
+            await callback.message.edit_text(
+                f'{await username(callback.from_user.id)}, покинул стройку бизнеса {bus_info["name"]} {bus_info["product"]}')
         else:
             await callback.answer('Это предназначено не вам!')
     if 'leave_build_no_' in data_callback:
@@ -1819,10 +1912,11 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                                               callback_data=f'creater_ustr_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
                 otmena = InlineKeyboardButton('Отмена ❌', callback_data=f'creater_otmena_')
                 key.add(but_nazad, accept, but_vpered, otmena)
-                await callback.message.edit_text(f'Бизнес: {new_list_bus[int(page) - 1]["name"]} {new_list_bus[int(page) - 1]["product"]}\n'
-                                       f'Владелец: {await username(callback)}\n'
-                                       f'Автосборщиков: {len(list(database.autocreater_work.find({"boss": new_list_bus[int(page) - 1]["boss"]})))}/{new_list_bus[int(page) - 1]["work_place"]}\n\n'
-                                       f'Страница: {int(page)}/{len(new_list_bus)}', reply_markup=key, parse_mode='HTML')
+                await callback.message.edit_text(
+                    f'Бизнес: {new_list_bus[int(page) - 1]["name"]} {new_list_bus[int(page) - 1]["product"]}\n'
+                    f'Владелец: {await username(callback)}\n'
+                    f'Автосборщиков: {len(list(database.autocreater_work.find({"boss": new_list_bus[int(page) - 1]["boss"]})))}/{new_list_bus[int(page) - 1]["work_place"]}\n\n'
+                    f'Страница: {int(page)}/{len(new_list_bus)}', reply_markup=key, parse_mode='HTML')
             else:
                 await callback.answer('Это последняя страница')
         else:
@@ -1852,7 +1946,7 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                     f'Бизнес: {new_list_bus[int(page) + 1]["name"]} {new_list_bus[int(page) + 1]["product"]}\n'
                     f'Владелец: {await username(callback)}\n'
                     f'Автосборщиков: {len(list(database.autocreater_work.find({"boss": new_list_bus[int(page) + 1]["boss"]})))}/{new_list_bus[int(page) + 1]["work_place"]}\n\n'
-                    f'Страница: {int(page) +2 }/{len(new_list_bus)}', reply_markup=key, parse_mode='HTML')
+                    f'Страница: {int(page) + 2}/{len(new_list_bus)}', reply_markup=key, parse_mode='HTML')
             else:
                 await callback.answer('Это последняя страница')
         else:
@@ -1870,7 +1964,8 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                     new_list_bus.append(bus)
             database.autocreater_work.insert_one({'boss': new_list_bus[int(page)]["boss"],
                                                   'creater': callback.from_user.id})
-            await callback.message.edit_text(f'{await username(callback)}, вы успешно устроились на {new_list_bus[int(page)]["name"]} {new_list_bus[int(page)]["product"]}')
+            await callback.message.edit_text(
+                f'{await username(callback)}, вы успешно устроились на {new_list_bus[int(page)]["name"]} {new_list_bus[int(page)]["product"]}', parse_mode='HTML')
         else:
             await callback.answer('Это предназначено не вам!')
     if 'creater_otmena' in data_callback:
@@ -1882,8 +1977,11 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
     '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼ПОИСК РАБОТЫ АВТОСБОРЩИК🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
     await bot.answer_callback_query(callback.id)
 
+
 """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
 '''🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼🔼'''
+
+
 def reg_all(dp: Dispatcher):
     dp.register_callback_query_handler(otmena, text='otmena')
     dp.register_callback_query_handler(all)

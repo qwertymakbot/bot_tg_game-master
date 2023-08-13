@@ -77,7 +77,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Вызывается при старте
 async def on_startup(_):
-    return
+
     data_vuz = list(res_database.vuz.find())
     for info_vuz in data_vuz:
         # Получение переменных с строки
@@ -147,9 +147,28 @@ async def on_startup(_):
     # Стройка бизнеса
     build_data = list(res_database.build_bus.find())
     for build in build_data:
-        scheduler.add_job(end_build_bus, "date",
+        try:
+            # Получение переменных с строки
+            tz = pytz.timezone('Etc/GMT-3')
+
+            date, time = build['time'].split(' ')
+            year, month, day = date.split('-')
+            hour, minute, second = time.split(':')
+            time_vuz = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+            time_now = datetime(datetime.now(tz=tz).year, datetime.now(tz=tz).month,
+                                datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
+                                datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
+            result = time_vuz - time_now
+            # Если уже окончил
+
+            if '-' in str(result):
+                await end_build_bus(build['boss'])
+            else:
+                scheduler.add_job(end_build_bus, "date",
                           run_date=build['time'],
-                          args=build['boss'], id=f'{build["boss"]}_build', timezone=tz)
+                          args=(build['boss'],), id=f'{build["boss"]}_build', timezone=tz)
+        except:
+            pass
     print('Бот онлайн')
 
 # Окончание стройки объекта
@@ -255,157 +274,201 @@ async def end_job_no_citizen(user_id, chat_id):
 # Окончание работы если гражданин
 async def end_job_citizen(user_id, chat_id):
     # Получение данных
-    try:
+    user_info = database.users.find_one({'id': user_id})
+    job_info = database.jobs.find_one({'name_job': user_info['job']})
+    country_info = database.countries.find_one({'country': user_info['citizen_country']})
+    if user_info['job'] == 'Автосборщик':
+        # получение/обновление данных о бизнесе
+        job_info = database.jobs.find_one({'name_job': 'Автосборщик'})
 
-        user_info = database.users.find_one({'id': user_id})
-        job_info = database.jobs.find_one({'name_job': user_info['job']})
-        country_info = database.countries.find_one({'country': user_info['citizen_country']})
-        if user_info['job'] == 'Работник мака':
-            # обновление данных пользователя
-            database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(
-                                                                     job_info['cash'] - round(
-                                                                         int(job_info['cash']) * (
-                                                                                 country_info['nalog_job'] / 100))),
-                                                                 'food': user_info['food'] + round(food_mak * 0.1)}})
-            res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
-
-            # обновление данных страны
-            database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {
-                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                    'food': int(country_info['food']) + food_mak}})
-            await bot.send_message(chat_id,
-                                   f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
-                                   f'🏵 +{job_info["exp_for_job"]} опыта\n'
-                                   f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
-                                   f'🍔 +{round(food_mak * 0.1)}кг пищи\n'
-                                   f'Государству:\n'
-                                   f'🍔 +{food_mak}кг пищи\n'
-                                   f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
-                                   parse_mode='HTML')
-        elif user_info['job'] == 'Повар':
-            # обновление данных пользователя
-            database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(
-                                                                     job_info['cash'] - round(
-                                                                         int(job_info['cash']) * (
-                                                                                 country_info['nalog_job'] / 100))),
-                                                                 'food': user_info['food'] + round(food_povar * 0.1)}})
-            res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
-
-            # обновление данных страны
-            database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {
-                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                    'food': int(country_info['food']) + food_povar}})
-            await bot.send_message(chat_id,
-                                   f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
-                                   f'🏵 +{job_info["exp_for_job"]} опыта\n'
-                                   f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
-                                   f'🍔 +{round(food_povar * 0.1)}кг пищи\n'
-                                   f'Государству:\n'
-                                   f'🍔 +{food_povar}кг пищи\n'
-                                   f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
-                                   parse_mode='HTML')
-        elif user_info['job'] == 'Пекарь' or user_info['job'] == 'Кондитер':
-            # обновление данных пользователя
-            database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(
-                                                                     job_info['cash'] - round(
-                                                                         int(job_info['cash']) * (
-                                                                                 country_info['nalog_job'] / 100))),
-                                                                 'food': user_info['food'] + round(food_pekar * 0.1)}})
-            res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
-
-            # обновление данных страны
-            database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {
-                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                    'food': int(country_info['food']) + food_pekar}})
-            await bot.send_message(chat_id,
-                                   f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
-                                   f'🏵 +{job_info["exp_for_job"]} опыта\n'
-                                   f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
-                                   f'🍔 +{round(food_pekar * 0.1)}кг пищи\n'
-                                   f'Государству:\n'
-                                   f'🍔 +{food_pekar}кг пищи\n'
-                                   f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
-                                   parse_mode='HTML')
-        elif user_info['job'] == 'Фермер':
-            # обновление данных пользователя
-            database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(
-                                                                     job_info['cash'] - round(
-                                                                         int(job_info['cash']) * (
-                                                                                 country_info['nalog_job'] / 100))),
-                                                                 'food': user_info['food'] + round(food_fermer * 0.1)}})
-            res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
-
-            # обновление данных страны
-            database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {
-                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                    'food': int(country_info['food']) + food_fermer}})
-            await bot.send_message(chat_id,
-                                   f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
-                                   f'🏵 +{job_info["exp_for_job"]} опыта\n'
-                                   f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
-                                   f'🍔 +{round(food_fermer * 0.1)}кг пищи\n'
-                                   f'Государству:\n'
-                                   f'🍔 +{food_fermer}кг пищи\n'
-                                   f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
-                                   parse_mode='HTML')
-        elif user_info['job'] == 'Нефтяник':
-            oil = 50  # Нефть
-            # обновление данных пользователя
-            database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(
-                                                                     job_info['cash'] - round(
-                                                                         int(job_info['cash']) * (
-                                                                                 country_info['nalog_job'] / 100))),
-                                                                 'oil': user_info['oil'] + round(oil * 0.1)}})
-            res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
-
-            # обновление данных страны
-            database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {
-                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
-                    'oil': int(country_info['oil']) + oil}})
-            await bot.send_message(chat_id,
-                                   f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
-                                   f'🏵 +{job_info["exp_for_job"]} опыта\n'
-                                   f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
-                                   f'🖤 +{round(oil * 0.1)}л\n'
-                                   f'Государству:\n'
-                                   f'🖤 +{oil}л\n'
-                                   f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
-                                   parse_mode='HTML')
-        elif user_info['job'] == 'нет':
-            res_database.job.delete_one({'id': user_id})
-
+        bus_info = database.users_bus.find_one(
+            {'boss': database.autocreater_work.find_one({'creater': user_id})['boss']})
+        buss = database.businesses.find_one({'product': bus_info['product']})
+        # Если создалась 1 штука
+        if bus_info['time_to_create'] <= job_info['job_time']:
+            # Обновление времени для создания
+            database.users_bus.update_one(
+                {'boss': database.autocreater_work.find_one({'creater': user_id})['boss']},
+                {'$set': {'time_to_create': buss['time_to_create']}})
+            # +1 к количеству
+            count_cars = database.cars.find_one({'name_car': bus_info['product']})
+            database.cars.update_one({'name_car': bus_info['product']}, {'$set': {'count':count_cars['count'] + 1}})
+            arr = next(os.walk(f'{os.getcwd()}/res/cars_pic'))[2]
+            for car in arr:
+                if bus_info['product'] in car:
+                    await bot.send_photo(chat_id, photo=InputFile(f'{os.getcwd()}/res/cars_pic/{car}'),
+                                         caption=f'Была произведена {bus_info["product"]}\n'
+                                                 f'Текущее количество в мире: {count_cars["count"] + 1}')
         else:
-            # обновление данных пользователя
-            database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
-                                                                 'cash': user_info['cash'] + int(
-                                                                     job_info['cash'] - round(
-                                                                         int(job_info['cash']) * (
-                                                                                 country_info['nalog_job'] / 100)))}})
-            res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+            # Обновление оставшегося времени для создания
+            database.users_bus.update_one(
+                {'boss': database.autocreater_work.find_one({'creater': user_id})['boss']},
+                {'$set': {'time_to_create': bus_info['time_to_create'] - job_info['job_time']}})
 
-            # обновление данных страны
-            database.countries.update_one({'country': user_info['citizen_country']}, {
-                '$set': {
-                    'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100))}})
-            await bot.send_message(chat_id,
-                                   f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
-                                   f'🏵 +{job_info["exp_for_job"]} опыта\n'
-                                   f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
-                                   f'Государству:\n'
-                                   f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
-                                   parse_mode='HTML')
-    except:
-        pass
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(
+                                                                 job_info['cash'] - round(
+                                                                     int(job_info['cash']) * (
+                                                                             country_info['nalog_job'] / 100)))}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {
+                'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100))}})
+        await bot.send_message(chat_id,
+                               f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'Государству:\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+    if user_info['job'] == 'Работник мака':
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(
+                                                                 job_info['cash'] - round(
+                                                                     int(job_info['cash']) * (
+                                                                             country_info['nalog_job'] / 100))),
+                                                             'food': user_info['food'] + round(food_mak * 0.1)}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {
+                'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                'food': int(country_info['food']) + food_mak}})
+        await bot.send_message(chat_id,
+                               f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'🍔 +{round(food_mak * 0.1)}кг пищи\n'
+                               f'Государству:\n'
+                               f'🍔 +{food_mak}кг пищи\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+    elif user_info['job'] == 'Повар':
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(
+                                                                 job_info['cash'] - round(
+                                                                     int(job_info['cash']) * (
+                                                                             country_info['nalog_job'] / 100))),
+                                                             'food': user_info['food'] + round(food_povar * 0.1)}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {
+                'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                'food': int(country_info['food']) + food_povar}})
+        await bot.send_message(chat_id,
+                               f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'🍔 +{round(food_povar * 0.1)}кг пищи\n'
+                               f'Государству:\n'
+                               f'🍔 +{food_povar}кг пищи\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+    elif user_info['job'] == 'Пекарь' or user_info['job'] == 'Кондитер':
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(
+                                                                 job_info['cash'] - round(
+                                                                     int(job_info['cash']) * (
+                                                                             country_info['nalog_job'] / 100))),
+                                                             'food': user_info['food'] + round(food_pekar * 0.1)}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {
+                'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                'food': int(country_info['food']) + food_pekar}})
+        await bot.send_message(chat_id,
+                               f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'🍔 +{round(food_pekar * 0.1)}кг пищи\n'
+                               f'Государству:\n'
+                               f'🍔 +{food_pekar}кг пищи\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+    elif user_info['job'] == 'Фермер':
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(
+                                                                 job_info['cash'] - round(
+                                                                     int(job_info['cash']) * (
+                                                                             country_info['nalog_job'] / 100))),
+                                                             'food': user_info['food'] + round(food_fermer * 0.1)}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {
+                'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                'food': int(country_info['food']) + food_fermer}})
+        await bot.send_message(chat_id,
+                               f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'🍔 +{round(food_fermer * 0.1)}кг пищи\n'
+                               f'Государству:\n'
+                               f'🍔 +{food_fermer}кг пищи\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+    elif user_info['job'] == 'Нефтяник':
+        oil = 50  # Нефть
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(
+                                                                 job_info['cash'] - round(
+                                                                     int(job_info['cash']) * (
+                                                                             country_info['nalog_job'] / 100))),
+                                                             'oil': user_info['oil'] + round(oil * 0.1)}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {
+                'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100)),
+                'oil': int(country_info['oil']) + oil}})
+        await bot.send_message(chat_id,
+                               f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'🖤 +{round(oil * 0.1)}л\n'
+                               f'Государству:\n'
+                               f'🖤 +{oil}л\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+    elif user_info['job'] == 'нет':
+        res_database.job.delete_one({'id': user_id})
+
+    else:
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(
+                                                                 job_info['cash'] - round(
+                                                                     int(job_info['cash']) * (
+                                                                             country_info['nalog_job'] / 100)))}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {
+                'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100))}})
+        await bot.send_message(chat_id,
+                               f'{await username_2(user_id, user_info["firstname"])}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'Государству:\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+
 
 
 async def isSubsc(message):

@@ -65,7 +65,7 @@ async def work(message: types.Message):
                     job_info = database.jobs.find_one({'name_job': user_info['job']})
                     country_info = database.countries.find_one({'country': user_info['citizen_country']})
                     if country_info['food'] >= job_info['need_food']:  # Если в стране достаточно еды
-
+                        arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
                         # Если строитель, то не работаем
                         if user_info['job'] == 'Строитель':
                             builder_info = database.builders_work.find_one({'id': user_id})
@@ -75,12 +75,38 @@ async def work(message: types.Message):
                                     parse_mode='HTML')
                                 return
 
+                        # Автосборщик
+                        if user_info['job'] == 'Автосборщик':
+                            autocreater_work = database.autocreater_work.find_one({'creater': message.from_user.id})
+                            if autocreater_work is not None:
+                                # Снятие еды со страны за работу
+                                database.countries.update_one({'country': user_info['citizen_country']},
+                                                              {'$set': {'food': country_info['food'] - job_info[
+                                                                  'need_food']}})
+                                await bot.send_photo(message.chat.id,
+                                                     photo=InputFile(
+                                                         f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
+                                                     caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
+                                                             f'Через {job_info["job_time"]} минут вы закончите!',
+                                                     parse_mode='HTML')
+                                # SCHEDULER
+                                res_database.job.update_one({'id': user_id},
+                                                            {'$set': {'time': await add_time_min(job_info['job_time']),
+                                                                      'working': True}})
+
+                                tz = pytz.timezone('Etc/GMT-3')
+                                scheduler.add_job(end_job_citizen, "date",
+                                                  run_date=await add_time_min(job_info['job_time']),
+                                                  args=(message, user_info['job']), id=str(user_id), timezone=tz)
+                            else:
+                                await bot.send_message(message.chat.id, f'{await username(message)}, для начала вам нужно устроится в автосборку!')
+                            return
+
                         # Снятие еды со страны за работу
                         database.countries.update_one({'country': user_info['citizen_country']},
                                                       {'$set': {'food': country_info['food'] - job_info['need_food']}})
                         # Если есть машина
                         car_info = database.users_cars.find_one({'id': user_id})
-                        arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
                         if car_info is not None:
                             need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
                             if user_info['oil'] >= need_oil:
@@ -324,7 +350,55 @@ async def end_job_citizen(message: types.Message, job):
     job_info = database.jobs.find_one({'name_job': job})
     user_info = database.users.find_one({'id': user_id})
     country_info = database.countries.find_one({'country': user_info['citizen_country']})
-    if job == 'Работник мака':
+    if job == 'Автосборщик':
+        # получение/обновление данных о бизнесе
+        job_info = database.jobs.find_one({'name_job': 'Автосборщик'})
+
+        bus_info = database.users_bus.find_one(
+            {'boss': database.autocreater_work.find_one({'creater': user_id})['boss']})
+        buss = database.businesses.find_one({'product': bus_info['product']})
+        # Если создалась 1 штука
+        if bus_info['time_to_create'] <= job_info['job_time']:
+            # Обновление времени для создания
+            database.users_bus.update_one(
+                {'boss': database.autocreater_work.find_one({'creater': user_id})['boss']},
+                {'$set': {'time_to_create': buss['time_to_create']}})
+            # +1 к количеству
+            count_cars = database.cars.find_one({'name_car': bus_info['product']})
+            database.cars.update_one({'name_car': bus_info['product']}, {'$set': {'count': count_cars['count'] + 1}})
+            arr = next(os.walk(f'{os.getcwd()}/res/cars_pic'))[2]
+            for car in arr:
+                if bus_info['product'] in car:
+                    await bot.send_photo(message.chat.id, photo=InputFile(f'{os.getcwd()}/res/cars_pic/{car}'),
+                                         caption=f'Была произведена {bus_info["product"]}\n'
+                                                 f'Текущее количество в мире: {count_cars["count"] + 1}')
+        else:
+            # Обновление оставшегося времени для создания
+            database.users_bus.update_one(
+                {'boss': database.autocreater_work.find_one({'creater': user_id})['boss']},
+                {'$set': {'time_to_create': bus_info['time_to_create'] - job_info['job_time']}})
+
+
+        # обновление данных пользователя
+        database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
+                                                             'cash': user_info['cash'] + int(job_info['cash'] - round(
+                                                                 int(job_info['cash']) * (
+                                                                         country_info['nalog_job'] / 100)))}})
+        res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
+
+        # обновление данных страны
+        database.countries.update_one({'country': user_info['citizen_country']}, {
+            '$set': {'cash': country_info['cash'] + round(int(job_info['cash']) * (country_info['nalog_job'] / 100))}})
+        await bot.send_message(message.chat.id,
+                               f'{await username(message)}, вы окончили работу и получили за это:\n'
+                               f'🏵 +{job_info["exp_for_job"]} опыта\n'
+                               f'💵 +{job_info["cash"] - round(int(job_info["cash"]) * (country_info["nalog_job"] / 100))}$\n'
+                               f'Государству:\n'
+                               f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
+                               parse_mode='HTML')
+
+
+    elif job == 'Работник мака':
         # обновление данных пользователя
         database.users.update_one({'id': user_id}, {'$set': {'exp': user_info['exp'] + int(job_info['exp_for_job']),
                                                              'cash': user_info['cash'] + int(job_info['cash'] - round(

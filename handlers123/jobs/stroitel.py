@@ -8,9 +8,12 @@ async def build(message: types.Message):
     if user_info['job'] == 'Строитель':
         builder = database.builders_work.find_one({'builder': message.from_user.id})
         if builder is not None:
-            await bot.send_message(message.chat.id, f'{await username(message)}, вы уже находитесь на стройке!')
+            await bot.send_message(message.chat.id, f'{await username(message)}, вы уже находитесь на стройке!', parse_mode='HTML')
             return
         all_building = list(database.users_bus.find({'$and': [{'status': 'need_builders'}, {'country': user_info['citizen_country']}]}))
+        if not all_building:
+            await bot.send_message(message.chat.id, f'{await username(message)}, в вашей стране нет строек!', parse_mode='HTML')
+            return
         key = InlineKeyboardMarkup(row_width=3)
         but_nazad = InlineKeyboardButton('◀️', callback_data=f'build_naz_{str(message.from_user.id)[-3::]}_0')
         but_vpered = InlineKeyboardButton('▶️', callback_data=f'build_vper_{str(message.from_user.id)[-3::]}_0')
