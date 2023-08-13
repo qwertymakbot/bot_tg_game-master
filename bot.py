@@ -77,7 +77,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Вызывается при старте
 async def on_startup(_):
-
+    return
     data_vuz = list(res_database.vuz.find())
     for info_vuz in data_vuz:
         # Получение переменных с строки
