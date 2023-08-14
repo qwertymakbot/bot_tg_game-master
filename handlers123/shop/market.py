@@ -60,7 +60,7 @@ class Marketplace:
             'quantity': data['quantity']
         })
         user = database.users.find_one({'id': data['id']})
-        database.users.update_one({'id': data['id']}, {'$set': {'oil': int(user['food']) - int(data['quantity'])}})
+        database.users.update_one({'id': data['id']}, {'$set': {'food': int(user['food']) - int(data['quantity'])}})
         print('Обьявление успешно добавлено')
 
     async def sale_car(message: types.Message, price, quantity, name_car) -> str:
@@ -133,8 +133,7 @@ async def market_sale_food_price(message: types.Message, state: FSMContext):
             data = await load_data(data)
             await Marketplace.sale_food(data=data)
             await state.finish()
-        await message.answer(
-        'Ресурсы списаны с вашего счета, деньги поступят на счёт после того как другой пользователь приобретёт ваш товар')
+        await message.answer(f'{await username(message)}, ресурсы списаны с вашего счета, деньги поступят на счёт после того как другой пользователь приобретёт ваш товар', parse_mode='HTML')
     except:
         await message.answer(f'{await username(message)}, вы некорректно ввели цену!', parse_mode='HTML')
         await state.finish()
@@ -146,7 +145,7 @@ async def start_sale_oil(callback: types.CallbackQuery):
     if not adds:
         user_info = database.users.find_one({'id': callback.from_user.id})
         user_oil = int(user_info['oil'])
-        await callback.message.answer(text=f'Укажите количество топлива (доступно: {user_oil} л)')
+        await callback.message.edit_text(f'{await username(callback)}, укажите количество топлива (доступно: {user_oil} л)', parse_mode='HTML')
         await MarketplaceStatesSaleOil.quantity.set()
     else:
         await callback.message.edit_text(f'{await username(callback)}, чтобы добавить объявление - удалите объявление с продуктом Топливо из категории Мои объявления', parse_mode='HTML')
@@ -179,7 +178,7 @@ async def market_sale_oil_price(message: types.Message, state: FSMContext):
             await Marketplace.sale_oil(data=d)
         await state.finish()
         await message.answer(
-            'Ресурсы списаны с вашего счета, деньги поступят на счёт после того как другой пользователь приобретёт ваш товар')
+            f'{await username(message)}, ресурсы списаны с вашего счета, деньги поступят на счёт после того как другой пользователь приобретёт ваш товар', parse_mode='HTML')
     except:
         await message.answer(f'{await username(message)}, вы некорректно ввели цену!', parse_mode='HTML')
         await state.finish()

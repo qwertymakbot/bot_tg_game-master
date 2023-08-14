@@ -1230,6 +1230,20 @@ async def tagg(message: types.Message):
     id = int(message.get_args())
     await message.reply(await username_2(id, 'пользователь'), parse_mode='HTML')
 
+"""@dp.callback_query_handler(lambda callback: 'vuz_' in callback.data)
+async def vuz(callback: types.CallbackQuery):
+    name_job = callback.data.replace('vuz_', '')
+    job_info = database.jobs.find_one({'name_job': name_job})
+    await callback.message.edit_text(
+        f'{await username(callback)}, для обучения в ВУЗе "{name_job}" вам понадобится:\n'
+        f'    - {job_info["need_exp"]} опыта\n'
+        f'    - {job_info["need_cash"]}$\n'
+        f'    - Обучение длится 24 часа\n\n'
+        f'❗️ По окончании обучения вы получите возможность работать по профессии {name_job}',
+        reply_markup=InlineKeyboardMarkup(1).add(
+            InlineKeyboardButton('Начать обучение',
+                                 callback_data=f'start_vu_{name_job}'),
+            InlineKeyboardButton('Отмена', callback_data='otmena')), parse_mode='HTML')"""
 
 # Тегает
 async def username(message):

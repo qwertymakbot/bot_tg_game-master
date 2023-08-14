@@ -4,7 +4,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 import asyncio
 
-from bot import database, res_database
+from bot import database, res_database, username
 from create_bot import bot, dp, token
 
 
@@ -16,9 +16,9 @@ for car in list(database.cars.find()):
 gcar = []
 ecar = []
 for car in list(database.cars.find()):
-    if int(car['cost']) >= 20000:
+    if int(car['cost']) > 1_500_000:
         ecar.append(car['name_car'])
-    elif int(car['cost']) <= 20000:
+    elif int(car['cost']) <= 1_500_000:
         gcar.append(car['name_car'])
 
 
@@ -39,7 +39,7 @@ class Database:
 
     async def give_prize_in_middle_case(self, callback: types.CallbackQuery, prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
-        case_price = 100000
+        case_price = 500_000
         
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
         if '$' in prize[1]:
@@ -63,12 +63,9 @@ class Database:
                     'save_job_time': car_info['save_job_time']
                 })
 
-
-                
-
     async def give_prize_in_big_case(self, callback: types.CallbackQuery, prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
-        case_price = 150000
+        case_price = 1_500_000
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
         if '$' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
@@ -90,7 +87,6 @@ class Database:
                 })
 
         else:
-            print(0000)
             await callback.answer('У вас недостаточно средств')
 
 
@@ -123,29 +119,29 @@ class Cases:
                     return [exp, 'exp']
 
     async def open_middle_case(self):
-        prizes = ['money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp']
+        prizes = ['car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp']
         prize = random.choice(prizes)
         match prize:
             case 'money':
                 rand = random.randint(0, 4)
                 if rand == 1:
-                    money = random.randint(1000, 50000)
+                    money = random.randint(350_000, 750_000)
                     return [money, '$']
                 else:
-                    money = random.randint(1000, 5000)
+                    money = random.randint(100_000, 400_000)
                     return [money, '$']
 
             case 'exp':
-                rand = random.randint(0, 4)
+                rand = random.randint(0, 6)
                 if rand == 1:
-                    exp = random.randint(100, 1500)
+                    exp = random.randint(700, 10_000)
                     return [exp, 'exp']
                 else:
-                    exp = random.randint(100, 500)
+                    exp = random.randint(100, 3500)
                     return [exp, 'exp']
 
             case 'car':
-                rand = random.randint(0, 10)
+                rand = random.randint(0, 20)
 
                 if rand == 1:
                     cars = ecar
@@ -164,25 +160,25 @@ class Cases:
            #        print(f'{username} выиграл переход в следующий класс')
 
     async def open_big_case(self):
-        prizes = ['car', 'money', 'exp', 'money', 'exp', 'money', 'exp']
+        prizes = ['car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp']
         prize = random.choice(prizes)
         match prize:
             case 'money':
                 rand = random.randint(0, 4)
                 if rand == 1:
-                    money = random.randint(1000, 200000)
+                    money = random.randint(750_000, 4_000_000)
                     return [money, '$']
                 else:
-                    money = random.randint(1000, 70000)
+                    money = random.randint(650_000, 2_000_000)
                     return [money, '$']
 
             case 'exp':
                 rand = random.randint(0, 4)
                 if rand == 1:
-                    exp = random.randint(100, 1500)
+                    exp = random.randint(5000, 30000)
                     return [exp, 'exp']
                 else:
-                    exp = random.randint(100, 500)
+                    exp = random.randint(2500, 14000)
                     return [exp, 'exp']
 
             case 'car':
@@ -219,10 +215,10 @@ async def little_case(callback: types.CallbackQuery):
     if user['cash'] >= case_price:
         prize = await case.open_little_case()
         await db.give_prize_in_little_case(callback=callback, prize=prize)
-        await bot.send_message(callback.message.chat.id, text=f'{callback.from_user.first_name} купил маленький кейс за 10000$')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил маленький кейс за {case_price:n}$', parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(4)
-        await callback.message.answer( text=f'{callback.from_user.first_name} выбил {prize[0]}{prize[1]}')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)} выбил {prize[0]}{prize[1]}', parse_mode='HTML')
     else:
         await callback.answer('У вас недостаточно средств')
 
@@ -230,17 +226,17 @@ async def middle_case(callback: types.CallbackQuery):
     db = Database()
     case = Cases()
     user = database.users.find_one({'id': int(callback.from_user.id)})
-    case_price = 100000
+    case_price = 500_000
     if user['cash'] >= case_price:
         prize = await case.open_middle_case()
         await db.give_prize_in_middle_case(callback=callback, prize=prize)
-        await callback.message.answer(text=f'{callback.from_user.first_name} купил средний кейс за 100000$')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил средний кейс за {case_price:n}$', parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(4)
         if prize[1] == 'car':
-            await callback.message.answer(text=f'{callback.from_user.first_name} выбил {prize[0]}')
+            await bot.send_message(callback.message.chat.id,f'{await username(callback)} выбил {prize[0]}', parse_mode='HTML')
         else:
-            await callback.message.answer(text=f'{callback.from_user.first_name} выбил {prize[0]}{prize[1]}')
+            await bot.send_message(callback.message.chat.id,f'{await username(callback)} выбил {prize[0]}{prize[1]}', parse_mode='HTML')
     else:
         await callback.answer('У вас недостаточно средств')
 
@@ -248,16 +244,16 @@ async def big_case(callback: types.CallbackQuery):
     db = Database()
     case = Cases()
     user = database.users.find_one({'id': int(callback.from_user.id)})
-    case_price = 150000
+    case_price = 1_500_000
     if user['cash'] >= case_price:
         prize = await case.open_big_case()
         await db.give_prize_in_big_case(callback=callback, prize=prize)
-        await callback.message.answer(text=f'{callback.from_user.first_name} Купил большой кейс за 150000$')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)} Купил большой кейс за {case_price:n}$', parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(4)
         if prize[1] == 'car':
-            await callback.message.answer(text=f'{callback.from_user.first_name} выбил {prize[0]}')
+            await bot.send_message(callback.message.chat.id, f'{await username(callback)} выбил {prize[0]}', parse_mode='HTML')
         else:
-            await callback.message.answer(text=f'{callback.from_user.first_name} выбил {prize[0]}{prize[1]}')
+            await bot.send_message(callback.message.chat.id, f'{await username(callback)} выбил {prize[0]}{prize[1]}', parse_mode='HTML')
     else:
         await callback.answer('У вас недостаточно средств')

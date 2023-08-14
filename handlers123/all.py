@@ -21,58 +21,6 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
     data_callback = callback.data
     path = os.getcwd()
     print(data_callback)
-    # Покупка машины
-    if 'shop_' in data_callback:
-        data_callback = str(data_callback.replace('shop_', ''))
-        user_info = database.users.find_one({'id': user_id})
-        car_info = database.cars.find_one({'name_car': data_callback})
-        if car_info['count'] == 0:
-            await callback.message.edit_text(f'{await username(callback)}, {car_info["name_car"]} нет в наличии!',
-                                             parse_mode='HTML')
-            return
-        if user_info['cash'] >= car_info['cost']:
-            count_user_car = database.users_cars.find_one({'$and': [{'id': user_id}, {'car': car_info['name_car']}]})
-            if count_user_car is None:
-                database.users_cars.insert_one({'id': user_id,
-                                                'car': car_info['name_car'],
-                                                'fuel_per_hour': car_info['fuel_per_hour'],
-                                                'save_job_time': car_info['save_job_time'],
-                                                'count': 1,
-                                                'active': False})
-                # -1 из наличия
-                database.cars.update_one({'name_car': data_callback}, {'$set': {'count': car_info['count'] - 1}})
-                # Снятие денег с баланса
-                database.cars.update_one({'users': user_id}, {'$set': {'cash': user_info['cash'] - car_info['cost']}})
-                # Зачисление денег на баланс государства
-                country_info = database.countries.find_one({'country': car_info['country']})
-                database.countries.update_one({'country': car_info['country']},
-                                              {'$set': {'cash': country_info['cash'] + car_info['cost']}})
-                await bot.send_photo(callback.message.chat.id,
-                                     caption=f'{await username(callback)}, успешно приобрел машину!',
-                                     photo=InputFile(
-                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'),
-                                     parse_mode='HTML')
-            else:
-                # Добавление машины пользователю
-                database.users_cars.update_one({'id': user_id, 'car': car_info['name_car']},
-                                               {'$set': {'count': count_user_car['count'] + 1}})
-                # Удалении одной машины из бд
-                database.cars.update_one({'name_car': data_callback}, {'$set': {'count': car_info['count'] - 1}})
-                # Снятие денег с покупателя
-                database.cars.update_one({'users': user_id}, {'$set': {'cash': user_info['cash'] - car_info['cost']}})
-                # Зачисление денег на баланс государства
-                country_info = database.countries.find_one({'country': car_info['country']})
-                database.countries.update_one({'country': car_info['country']},
-                                              {'$set': {'cash': country_info['cash'] + car_info['cost']}})
-                await bot.send_photo(callback.message.chat.id,
-                                     caption=f'{await username(callback)}, успешно приобрел машину!',
-                                     photo=InputFile(
-                                         f'{os.getcwd()}/res/cars_pic/{car_info["name_car"]} {car_info["color"]}.png'),
-                                     parse_mode='HTML')
-
-        else:
-            await bot.send_message(callback.message.chat.id,
-                                   text=f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽РУЛЕТКА🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     # Выбор стола в рулетке
     if 'rulette_' in data_callback:
@@ -1485,28 +1433,130 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
             await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
         else:
             await callback.answer('Это предназначено не вам!')
-
+    # Покупка
     if 'marketbuy_' in data_callback:
         user_id = data_callback.replace('marketbuy_', '')
         if str(callback.from_user.id)[-3::] == user_id:
             kb = InlineKeyboardMarkup(row_width=1)
-            oil = InlineKeyboardButton(text='Топливо', callback_data=f'marketbuyer_buy_oil_{str(callback.from_user.id)[-3::]}')
-            food = InlineKeyboardButton(text='Еда', callback_data=f'marketbuyer_buy_food_{str(callback.from_user.id)[-3::]}')
-            # car = InlineKeyboardButton(text='Автомобиль', callback_data='marketbuyer_buy_car')
+            oil = InlineKeyboardButton(text='Топливо', callback_data=f'market_buy_oil_{str(callback.from_user.id)[-3::]}')
+            food = InlineKeyboardButton(text='Еда', callback_data=f'market_buy_food_{str(callback.from_user.id)[-3::]}')
+            # car = InlineKeyboardButton(text='Автомобиль', callback_data='market_buy_car')
             back = InlineKeyboardButton(text='Назад', callback_data='marketplace_')
             kb.add(oil, food, back)
             await callback.message.edit_text(text='Выберите товар:', reply_markup=kb)
         else:
             await callback.answer('Это предназначено не вам!')
-    # Покупка
-    if 'marketbuyer_buy_' in data_callback:
-        product, user_id = data_callback.replace('marketbuyer_buy_', '').split('_')
+    if 'market_buy_' in data_callback:
+        product, user_id = data_callback.replace('market_buy_', '').split('_')
         if str(callback.from_user.id)[-3::] == user_id:
-            ...
+            all_ads = list(res_database.marketplace.find({'product': product}))
+            if all_ads:
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'marketbuyer_nazad_{product}_{str(callback.from_user.id)[-3::]}_0')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'marketbuyer_vpered_{product}_{str(callback.from_user.id)[-3::]}_0')
+                but_otmena = InlineKeyboardButton('Отмена',
+                                                  callback_data=f'marketbuyer_otmena_{product}_{str(callback.from_user.id)[-3::]}')
+                but_buy = InlineKeyboardButton('Купить ✅',
+                                               callback_data=f'marketbuyer_buy_{product}_{str(callback.from_user.id)[-3::]}_0')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                seller_info = database.users.find_one({'id': all_ads[0]['id']})
+                await callback.message.edit_text(f'Объявление о продаже от {await username_2(all_ads[0]["id"], seller_info["firstname"])}\n'
+                                                 f'Продукт: {product}\n'
+                                                 f'Количество: {all_ads[0]["quantity"]}\n'
+                                                 f'Цена за данное количество: {all_ads[0]["price"]:n}$\n\n'
+                                                 f'Страница 1/{len(all_ads)}', reply_markup=key, parse_mode='HTML')
+
+            else:
+                await callback.message.edit_text(f'{await username(callback)}, по данной категории нет объявлений!', parse_mode='HTML')
         else:
             await callback.answer('Это предназначено не вам!')
-
-
+    if 'marketbuyer_nazad_' in data_callback:
+        product, user_id, page = data_callback.replace('marketbuyer_nazad_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            if int(page) != 0:
+                all_ads = list(res_database.marketplace.find({'product': product}))
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'marketbuyer_nazad_{product}_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'marketbuyer_vpered_{product}_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                but_otmena = InlineKeyboardButton('Отмена',
+                                                  callback_data=f'marketbuyer_otmena_{product}_{str(callback.from_user.id)[-3::]}')
+                but_buy = InlineKeyboardButton('Купить ✅',
+                                               callback_data=f'marketbuyer_buy_{product}_{str(callback.from_user.id)[-3::]}_{int(page) - 1}')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                seller_info = database.users.find_one({'id': all_ads[int(page) - 1]['id']})
+                await callback.message.edit_text(
+                    f'Объявление о продаже от {await username_2(all_ads[int(page) - 1]["id"], seller_info["firstname"])}\n'
+                    f'Продукт: {product}\n'
+                    f'Количество: {all_ads[int(page) - 1]["quantity"]}\n'
+                    f'Цена за данное количество: {all_ads[int(page) - 1]["price"]:n}$\n\n'
+                    f'Страница {int(page)}/{len(all_ads)}', reply_markup=key, parse_mode='HTML')
+            else:
+                await callback.answer('Это последняя страница!')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'marketbuyer_vpered_' in data_callback:
+        product, user_id, page = data_callback.replace('marketbuyer_vpered_', '').split('_')
+        all_ads = list(res_database.marketplace.find({'product': product}))
+        if str(callback.from_user.id)[-3::] == user_id:
+            if int(page) + 1 < len(all_ads):
+                key = InlineKeyboardMarkup()
+                but_nazad = InlineKeyboardButton('◀️',
+                                                 callback_data=f'marketbuyer_nazad_{product}_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_vpered = InlineKeyboardButton('▶️',
+                                                  callback_data=f'marketbuyer_vpered_{product}_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                but_otmena = InlineKeyboardButton('Отмена',
+                                                  callback_data=f'marketbuyer_otmena_{product}_{str(callback.from_user.id)[-3::]}')
+                but_buy = InlineKeyboardButton('Купить ✅',
+                                               callback_data=f'marketbuyer_buy_{product}_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
+                key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                seller_info = database.users.find_one({'id': all_ads[int(page) + 1]['id']})
+                await callback.message.edit_text(
+                    f'Объявление о продаже от {await username_2(all_ads[int(page) + 1]["id"], seller_info["firstname"])}\n'
+                    f'Продукт: {product}\n'
+                    f'Количество: {all_ads[int(page) + 1]["quantity"]}\n'
+                    f'Цена за данное количество: {all_ads[int(page) + 1]["price"]:n}$\n\n'
+                    f'Страница {int(page) + 2}/{len(all_ads)}', reply_markup=key, parse_mode='HTML')
+            else:
+                await callback.answer('Это последняя страница!')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'marketbuyer_buy_' in data_callback:
+        product, user_id, page = data_callback.replace('marketbuyer_buy_', '').split('_')
+        all_ads = list(res_database.marketplace.find({'product': product}))
+        if str(callback.from_user.id)[-3::] == user_id:
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            print(all_ads)
+            seller_info = database.users.find_one({'id': all_ads[int(page)]['id']})
+            if user_info['id'] == seller_info['id']:
+                await callback.message.edit_text(f'{await username(callback)}, вы не можете купить сами у себя!', parse_mode='HTML')
+                return
+            if user_info['cash'] >= all_ads[int(page)]['price']:
+                # Тот кто продавал
+                database.users.update_one({'id': seller_info['id']}, {'$set': {'cash': seller_info['cash'] + all_ads[int(page)]['price']}})
+                res_database.marketplace.delete_one({'$and': [{'id': seller_info['id']}, {'product': product}]})
+                await bot.send_message(seller_info['id'], f'Объявление о продаже от {await username_2(all_ads[int(page)]["id"], seller_info["firstname"])}\n'
+                    f'Продукт: {product}\n'
+                    f'Количество: {all_ads[int(page)]["quantity"]}\n'
+                    f'Цена за данное количество: {all_ads[int(page)]["price"]:n}$\n\n'
+                                                          f'Ваш продукт был куплен, средства начислены ✅', parse_mode='HTML')
+                # Тот кто купил
+                database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': user_info['cash'] - all_ads[int(page)]['price'],
+                                                                                   product: user_info[product] + all_ads[int(page)]['quantity']}})
+                await callback.message.edit_text(f'{await username(callback)}, вы успешно приобрели продукт {product} в количестве {all_ads[int(page)]["quantity"]} за {all_ads[int(page)]["price"]:n}$', parse_mode='HTML')
+            else:
+                await callback.message.edit_text(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+        else:
+            await callback.answer('Это предназначено не вам!')
+    if 'marketbuyer_otmena_' in data_callback:
+        product, user_id = data_callback.replace('marketbuyer_otmena_', '').split('_')
+        if str(callback.from_user.id)[-3::] == user_id:
+            await callback.message.delete()
+        else:
+            await callback.answer('Это предназначено не вам!')
     # Мои объявления
     if 'market_my_ads_watch_' in data_callback:
         user_id = data_callback.replace('market_my_ads_watch_', '')
@@ -1521,7 +1571,7 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                 but_otmena = InlineKeyboardButton('Отмена',
                                                   callback_data=f'market_my_ads_otmena_{str(callback.from_user.id)[-3::]}')
                 but_buy = InlineKeyboardButton('Убрать ✅',
-                                               callback_data=f'market_my_ads_buy_{str(callback.from_user.id)[-3::]}_0')
+                                               callback_data=f'market_my_ads_del_{str(callback.from_user.id)[-3::]}_0')
                 key.add(but_nazad, but_buy, but_vpered, but_otmena)
                 await callback.message.edit_text(f'{await username(callback)}, ваше объявление:\n'
                                                  f'Продукт: {all_ads[0]["product"]}\n'
@@ -1558,13 +1608,11 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                 await callback.answer('Это последняя страница!')
         else:
             await callback.answer('Это предназначено не вам!')
-
     if 'market_my_ads_vpered_' in data_callback:
         user_id, page = data_callback.replace('market_my_ads_vpered_', '').split('_')
         all_ads = list(res_database.marketplace.find({'id': callback.from_user.id}))
         if str(callback.from_user.id)[-3::] == user_id:
             if int(page) + 1 < len(all_ads):
-
                 key = InlineKeyboardMarkup()
                 but_nazad = InlineKeyboardButton('◀️',
                                                  callback_data=f'market_my_ads_nazad_{str(callback.from_user.id)[-3::]}_{int(page) + 1}')
@@ -1585,7 +1633,6 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                 await callback.answer('Это последняя страница!')
         else:
             await callback.answer('Это предназначено не вам!')
-
     if 'market_my_ads_del_' in data_callback:
         user_id, page = data_callback.replace('market_my_ads_del_', '').split('_')
 
@@ -1598,11 +1645,11 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                 user_info = database.users.find_one({'id': callback.from_user.id})
                 database.users.update_one({'id': user_id},{'$set':{all_ads[int(page)]['product']: user_info[all_ads[int(page)]['product']] +
                                                                           all_ads[int(page)]['quantity']}})
-            await callback.message.edit_text(f'{await username(callback)}, вы успешно сняли объявление!')
+            await callback.message.edit_text(f'{await username(callback)}, вы успешно сняли объявление!', parse_mode='HTML')
         else:
             await callback.answer('Это предназначено не вам!')
     if 'market_my_ads_otmena_' in data_callback:
-        user_id = data_callback.replace('market_my_ads_del_', '')
+        user_id = data_callback.replace('market_my_ads_otmena_', '')
         if str(callback.from_user.id)[-3::] == user_id:
             await callback.message.delete()
         else:
