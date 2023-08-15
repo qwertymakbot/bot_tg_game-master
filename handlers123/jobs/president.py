@@ -1,7 +1,9 @@
 from bot import bot, Dispatcher, database, check_user, username, types, InputFile, InlineKeyboardButton, \
     InlineKeyboardMarkup, username_2
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 import os
-
+import pytz
+from datetime import datetime
 
 # /get_citizen Взять себе гражданина
 async def get_citizen(message: types.Message):
@@ -144,20 +146,72 @@ async def cpass(message):
         country_info = database.countries.find_one({'country': president_info['president_country']})
 
         citizens = database.users.find({'citizen_country': president_info['president_country']})
-        await bot.send_photo(message.chat.id, photo=InputFile(
-            f'{os.getcwd()}/res/country_pic/{president_info["president_country"]}.png'),
-                             caption='📑 О стране: 📑\n'
-                                     f'~{country_info["country"]}~\n'
-                                     f'👱‍♂️ Президент: {await username(message)}\n'
-                                     f'💰 Деньги в казне: {country_info["cash"]}$\n'
-                                     f'🖤 Нефть: {country_info["oil"]} литров\n'
-                                     f'🍔 Пища: {country_info["food"]} кг\n'
-                                     f'⛓ Территория: {country_info["territory"]} км\n'
-                                     f'🎖 Уровень: {country_info["level"]}\n'
-                                     f'👨‍👩‍👧‍👦 Население: {len(list(citizens))} из {country_info["max_people"]} чел.\n'
-                                     f'🧑‍🌾 Территория фермеров: {country_info["terr_for_farmers"]} км\n'
-                                     f'💵 Налог на работу: {country_info["nalog_job"]}%\n'
-                                     f'💸 Стоимость: {country_info["cost"]} $\n', parse_mode='HTML')
+
+        img = Image.open(f'{os.getcwd()}/res/country_pic/pattern.png').convert("RGBA")
+        font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=40)
+        draw_text = ImageDraw.Draw(img)
+        # Уровень
+        draw_text.text((105, 508),
+                       str(country_info["level"]),
+                       font=font,
+                       fill='#F6D0C7')
+        # Казна
+        draw_text.text((105, 568),
+                       f'{country_info["cash"]} $',
+                       font=font,
+                       fill='#F6D0C7')
+        # Президент
+        draw_text.text((105, 631),
+                       f'{message.from_user.first_name}',
+                       font=font,
+                       fill='#F6D0C7')
+        # Стоимость
+        draw_text.text((105, 695),
+                       f'{country_info["cost"]} $',
+                       font=font,
+                       fill='#F6D0C7')
+        # Население
+        draw_text.text((379, 506),
+                       f'{len(list(citizens))} из {country_info["max_people"]}',
+                       font=font,
+                       fill='#F6D0C7')
+        # Топливо
+        draw_text.text((379, 569),
+                       f'{country_info["oil"]}',
+                       font=font,
+                       fill='#F6D0C7')
+        # Еда
+        draw_text.text((379, 634),
+                       f'{country_info["food"]}',
+                       font=font,
+                       fill='#F6D0C7')
+        # Налог
+        draw_text.text((379, 697),
+                       f'{country_info["nalog_job"]}%',
+                       font=font,
+                       fill='#F6D0C7')
+        # Название страны
+        draw_text.text((105, 818),
+                       str(country_info["country"]),
+                       font=font,
+                       fill='#100404')
+        # Время
+        tz = pytz.timezone('Etc/GMT-3')
+        time_now = f'{f"0{datetime.now(tz=tz).day}" if len(str(datetime.now(tz=tz).day)) == 1 else datetime.now(tz=tz).day}.{f"0{datetime.now(tz=tz).month}" if len(str(datetime.now(tz=tz).month)) == 1 else datetime.now(tz=tz).month}.{datetime.now(tz=tz).year}\n{datetime.now(tz=tz).hour}:{f"0{datetime.now(tz=tz).minute}" if len(str(datetime.now(tz=tz).minute)) == 1 else datetime.now(tz=tz).minute}'
+        font_time = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=28)
+        draw_text.text((480, 814),
+                       time_now,
+                       font=font_time,
+                       fill='#100404')
+        # Флаг
+        img_flag = Image.open(f'{os.getcwd()}/res/country_pic/{country_info["country"]}.png').convert("RGBA")
+        new_img_flag = img_flag.resize((524,300))
+        img.paste(new_img_flag, (50,90))
+
+        img.save(f'{os.getcwd()}/res/country_pic/cache/img.png')
+        await bot.send_photo(message.chat.id,
+                             photo=InputFile(f'{os.getcwd()}/res/country_pic/cache/img.png',
+                                             filename='img'), parse_mode='HTML')
     else:
         await bot.send_message(message.chat.id, f'{await username(message)}, вы не являетесь президентом какой-либо страны', parse_mode='HTML')
 

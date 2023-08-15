@@ -29,9 +29,9 @@ class Database:
 
     async def give_prize_in_little_case(self, callback: types.CallbackQuery, prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
-        case_price = 10000
+        case_price = 10_000
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
-        if '$' in prize[1]:
+        if 'cash' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
 
         elif 'exp' in prize[1]:
@@ -43,7 +43,7 @@ class Database:
         case_price = 500_000
         
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
-        if '$' in prize[1]:
+        if 'cash' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
 
         elif 'exp' in prize[1]:
@@ -79,7 +79,7 @@ class Database:
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 1_500_000
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
-        if '$' in prize[1]:
+        if 'cash' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
         elif 'exp' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'exp': int(user['exp']) + prize[0]}})
@@ -242,11 +242,11 @@ async def little_case(callback: types.CallbackQuery):
     db = Database()
     case = Cases()
     user = database.users.find_one({'id': int(callback.from_user.id)})
-    case_price = 10_000
+    case_price = 10000
     if user['cash'] >= case_price:
         prize = await case.open_little_case()
 
-        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил маленький кейс за {case_price:n}$', parse_mode='HTML')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил маленький кейс за 10 000 $', parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(3)
         if prize[1] == 'cash':
@@ -280,7 +280,7 @@ async def little_case(callback: types.CallbackQuery):
         # Начисление награды
         await db.give_prize_in_little_case(callback=callback, prize=prize)
     else:
-        await callback.answer('У вас недостаточно средств')
+        await bot.send_message(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
 
 async def middle_case(callback: types.CallbackQuery):
     db = Database()
@@ -290,7 +290,7 @@ async def middle_case(callback: types.CallbackQuery):
     if user['cash'] >= case_price:
         prize = await case.open_middle_case()
 
-        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил средний кейс за {case_price:n}$', parse_mode='HTML')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил средний кейс за 500 000 $', parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(3)
         if prize[1] == 'cash':
@@ -374,7 +374,7 @@ async def middle_case(callback: types.CallbackQuery):
         await db.give_prize_in_middle_case(callback=callback, prize=prize)
 
     else:
-        await callback.answer('У вас недостаточно средств')
+        await bot.send_message(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
 
 async def big_case(callback: types.CallbackQuery):
     db = Database()
@@ -384,7 +384,7 @@ async def big_case(callback: types.CallbackQuery):
     if user['cash'] >= case_price:
         prize = await case.open_big_case()
 
-        await bot.send_message(callback.message.chat.id, f'{await username(callback)} Купил большой кейс за {case_price:n}$', parse_mode='HTML')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил большой кейс за 1 500 000 $', parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(3)
         if prize[1] == 'cash':
@@ -449,4 +449,4 @@ async def big_case(callback: types.CallbackQuery):
         # Начисление награды
         await db.give_prize_in_big_case(callback=callback, prize=prize)
     else:
-        await callback.answer('У вас недостаточно средств')
+        await bot.send_message(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')

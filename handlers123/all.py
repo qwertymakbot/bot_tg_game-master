@@ -1394,9 +1394,9 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
     """🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽КЕЙСЫ🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽🔽"""
     if 'Кейсы' in data_callback:
         case_keyboard = InlineKeyboardMarkup(row_width=1)
-        buy_little_case_btn = InlineKeyboardButton(text='Маленький кейс за 10000$', callback_data='Кейс_маленький')
-        buy_middle_case_btn = InlineKeyboardButton(text='Средний кейс за 100000$', callback_data='Кейс_средний')
-        buy_big_case_btn = InlineKeyboardButton(text='Большой кейс за 150000$', callback_data='Кейс_большой')
+        buy_little_case_btn = InlineKeyboardButton(text='Маленький кейс за 10 000$', callback_data='Кейс_маленький')
+        buy_middle_case_btn = InlineKeyboardButton(text='Средний кейс за 500 000$', callback_data='Кейс_средний')
+        buy_big_case_btn = InlineKeyboardButton(text='Большой кейс за 1 500 000$', callback_data='Кейс_большой')
         case_keyboard.add(buy_little_case_btn, buy_middle_case_btn, buy_big_case_btn)
         await callback.message.edit_text(text='Доступны следующие кейсы:', reply_markup=case_keyboard)
 
