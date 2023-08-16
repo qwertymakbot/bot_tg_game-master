@@ -33,7 +33,6 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from filters import antiflood
 
-
 # from background import keep_alive
 
 
@@ -70,14 +69,19 @@ def imports():
 # Разбиение на триады
 import locale
 
-#locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
+# locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
 #  Логгирование
 logging.basicConfig(level=logging.INFO)
 
 
 # Вызывается при старте
 async def on_startup(_):
+    print('БОТ ЕБАШИТ')
     return
+    # проверка активности президентов
+    tz = pytz.timezone('Etc/GMT-3')
+    scheduler.add_job(check_president, "cron",
+                      day_of_week='mon', timezone=tz)
     data_vuz = list(res_database.vuz.find())
     for info_vuz in data_vuz:
         # Получение переменных с строки
@@ -165,11 +169,95 @@ async def on_startup(_):
                 await end_build_bus(build['boss'])
             else:
                 scheduler.add_job(end_build_bus, "date",
-                          run_date=build['time'],
-                          args=(build['boss'],), id=f'{build["boss"]}_build', timezone=tz)
+                                  run_date=build['time'],
+                                  args=(build['boss'],), id=f'{build["boss"]}_build', timezone=tz)
         except:
             pass
+
+    check_food_countr = list(res_database.country_check_food.find())
+    for check_food in check_food_countr:
+        # Получение переменных с строки
+        tz = pytz.timezone('Etc/GMT-3')
+
+        date, time = check_food['time'].split(' ')
+        year, month, day = date.split('-')
+        hour, minute, second = time.split(':')
+        time_vuz = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+        time_now = datetime(datetime.now(tz=tz).year, datetime.now(tz=tz).month,
+                            datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
+                            datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
+        result = time_vuz - time_now
+        # Если уже окончил
+        if '-' in str(result):
+            await check_food_country(check_food['id'])
+        else:
+            scheduler.add_job(check_food_country, "date",
+                              run_date=build['time'],
+                              args=(check_food['id'],), timezone=tz)
+
+    autoschool_list = list(res_database.autoschool.find())
+    for autoschool_info in autoschool_list:
+        # Получение переменных с строки
+        tz = pytz.timezone('Etc/GMT-3')
+        date, time = autoschool_info['time'].split(' ')
+        year, month, day = date.split('-')
+        hour, minute, second = time.split(':')
+        time_job = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+        time_now = datetime(datetime.now(tz=tz).year, datetime.now(tz=tz).month,
+                            datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
+                            datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
+        result = time_job - time_now
+        # Если уже отработал
+        if '-' in str(result):
+            await end_autoschool(autoschool_info['id'])
+        else:
+            scheduler.add_job(end_autoschool, "date",
+                              run_date=autoschool_info['time'],
+                              args=(autoschool_info['id'],), timezone=tz)
     print('Бот онлайн')
+
+
+# Проверка больше ли еды в стране
+async def check_food_country(user_id):
+    country_info = database.countries.find_one({'president'})
+    president_info = database.users.find_one({'president'})
+    if country_info['food'] < 50:
+        database.users.update_one({'id': country_info['president']}, {'$set': {'president_country': 'нет'}})
+        users_info = database.users.find({'citizen_country': country_info['country']})
+        for user in users_info:
+            database.users.update_one({'id': user['id']}, {'$set': {'citizen_country': 'нет'}})
+        with open(f'{os.getcwd()}/res/countries.txt', 'r', encoding='utf-8') as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                else:
+                    countries_settings = line.replace('\n', '').split('.')
+                    if countries_settings[0] == country_info['country']:
+                        database.countries.update_one({'country': country_info['country']}, {'$set': {
+                            'president': 0,
+                            'cash': int(countries_settings[1]),
+                            'oil': int(countries_settings[2]),
+                            'food': int(countries_settings[3]),
+                            'territory': int(countries_settings[4]),
+                            'level': 0,
+                            'max_people': int(countries_settings[5]),
+                            'terr_for_farmers': int(countries_settings[6]),
+                            'cost': int(countries_settings[7]),
+                            'nalog_job': 1
+                        }})
+                        break
+        res_database.country_check_food.delete_one({'id': user_id})
+        await bot.send_message(country_info['president'],
+                               f'{username_2(country_info["president"], president_info["firstname"])}, вы не восстановили еду, поэтому ваша страна {country_info["country"]} была расформирована и возврату не подлежит!',
+                               parse_mode='HTML')
+
+# Проверка автошколы
+async def end_autoschool(user_id):
+    database.education.update_one({'id': user_id}, {'$set': {'auto_school': 'да'}})
+    user_info = database.users.find_one({"id": user_id})
+    res_database.autoschool.delete_one({'id': user_id})
+    await bot.send_message(user_id, f'{await username_2(user_id, user_info["firstname"])}, вы окончили обучение на B категорию!', parse_mode='HTML')
 
 # Окончание стройки объекта
 async def end_build_bus(user_id):
@@ -182,15 +270,19 @@ async def end_build_bus(user_id):
     for builder in builders_info:
         builder_info = database.users.find_one({'id': builder['builder']})
         job_info = database.jobs.find_one({'name_job': builder_info['job']})
-        database.users.update_one({'id': builders_info['builder']}, {'$set': {'cash': builder_info['cash'] + bus_info['cost'] * bus_info['bpay'],
-                                                                              'exp': builder_info['exp'] + job_info['exp_for_job']}})
+        database.users.update_one({'id': builders_info['builder']},
+                                  {'$set': {'cash': builder_info['cash'] + bus_info['cost'] * bus_info['bpay'],
+                                            'exp': builder_info['exp'] + job_info['exp_for_job']}})
         database.builders_work.delete_one({'builder': builder['builder']})
-        await bot.send_message(builder['builder'], f'{await username_2(builder_info["id"], builders_info["firstname"])}, вы получили вознаграждение за стройку объекта {bus_info["name"]} {bus_info["product"]}\n'
-                                                   f'💵 +{bus_info["bpay"]}\n'
-                                                   f'🏵 +{job_info["exp_for_job"]}', parse_mode='HTML')
+        await bot.send_message(builder['builder'],
+                               f'{await username_2(builder_info["id"], builders_info["firstname"])}, вы получили вознаграждение за стройку объекта {bus_info["name"]} {bus_info["product"]}\n'
+                               f'💵 +{bus_info["bpay"]}\n'
+                               f'🏵 +{job_info["exp_for_job"]}', parse_mode='HTML')
     res_database.build_bus.delete_one({'boss': user_id})
     await bot.send_message(user_id,
-                           f'{await username_2(user_id, boss_info["firstname"])}, ваш бизнес {bus_info["name"]} {bus_info["product"]} завершил стройку!', parse_mode='HTML')
+                           f'{await username_2(user_id, boss_info["firstname"])}, ваш бизнес {bus_info["name"]} {bus_info["product"]} завершил стройку!',
+                           parse_mode='HTML')
+
 
 # Окончание работы если не гражданин
 async def end_job_no_citizen(user_id, chat_id):
@@ -297,7 +389,14 @@ async def end_job_citizen(user_id, chat_id):
             arr = next(os.walk(f'{os.getcwd()}/res/cars_pic'))[2]
             autocreater_list = database.autocreater_work.find(
                 {'boss': database.autocreater_work.find_one({'creater': user_id})['boss']})
+            # Выдача зп предпринимателю
+            database.users.update_one({'id': database.autocreater_work.find_one({'creater': user_id})['boss']},
+                                      {'$set': {'cash': database.users.find_one(
+                                          {'id': database.autocreater_work.find_one({'creater': user_id})['boss']})[
+                                                            'cash'] +
+                                                        car_info['cost'] * 0.5}})
             for autocreater in autocreater_list:
+                # Выдача зп автосборщикам
                 autocreater_info = database.users.find_one({'id': autocreater['creater']})
                 database.users.update_one({'id': autocreater['creater']},
                                           {'$set': {'cash': autocreater_info['cash'] + round(float(job_cash) - round(
@@ -338,7 +437,8 @@ async def end_job_citizen(user_id, chat_id):
                                                                  job_info['cash'] - round(
                                                                      int(job_info['cash']) * (
                                                                              country_info['nalog_job'] / 100))),
-                                                             'food': user_info['food'] + (food_mak - round(int(food_mak) * (country_info["nalog_job"] / 100)))}})
+                                                             'food': user_info['food'] + (food_mak - round(
+                                                                 int(food_mak) * (country_info["nalog_job"] / 100)))}})
         res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
         # обновление данных страны
@@ -362,7 +462,9 @@ async def end_job_citizen(user_id, chat_id):
                                                                  job_info['cash'] - round(
                                                                      int(job_info['cash']) * (
                                                                              country_info['nalog_job'] / 100))),
-                                                             'food': user_info['food'] + (food_povar - round(int(food_povar) * (country_info["nalog_job"] / 100)))}})
+                                                             'food': user_info['food'] + (food_povar - round(
+                                                                 int(food_povar) * (
+                                                                         country_info["nalog_job"] / 100)))}})
         res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
         # обновление данных страны
@@ -386,7 +488,9 @@ async def end_job_citizen(user_id, chat_id):
                                                                  job_info['cash'] - round(
                                                                      int(job_info['cash']) * (
                                                                              country_info['nalog_job'] / 100))),
-                                                             'food': user_info['food'] + (food_pekar - round(int(food_pekar) * (country_info["nalog_job"] / 100)))}})
+                                                             'food': user_info['food'] + (food_pekar - round(
+                                                                 int(food_pekar) * (
+                                                                         country_info["nalog_job"] / 100)))}})
         res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
         # обновление данных страны
@@ -410,7 +514,9 @@ async def end_job_citizen(user_id, chat_id):
                                                                  job_info['cash'] - round(
                                                                      int(job_info['cash']) * (
                                                                              country_info['nalog_job'] / 100))),
-                                                             'food': user_info['food'] + (food_fermer - round(int(food_fermer) * (country_info["nalog_job"] / 100)))}})
+                                                             'food': user_info['food'] + (food_fermer - round(
+                                                                 int(food_fermer) * (
+                                                                         country_info["nalog_job"] / 100)))}})
         res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
         # обновление данных страны
@@ -435,7 +541,8 @@ async def end_job_citizen(user_id, chat_id):
                                                                  job_info['cash'] - round(
                                                                      int(job_info['cash']) * (
                                                                              country_info['nalog_job'] / 100))),
-                                                             'oil': user_info['oil'] + (oil - round(int(oil) * (country_info["nalog_job"] / 100)))}})
+                                                             'oil': user_info['oil'] + (oil - round(
+                                                                 int(oil) * (country_info["nalog_job"] / 100)))}})
         res_database.job.update_one({'id': user_id}, {'$set': {'working': False}})
 
         # обновление данных страны
@@ -475,7 +582,6 @@ async def end_job_citizen(user_id, chat_id):
                                f'Государству:\n'
                                f'💵 +{round(int(job_info["cash"] * (country_info["nalog_job"] / 100)))}',
                                parse_mode='HTML')
-
 
 
 async def isSubsc(message):
@@ -533,7 +639,8 @@ async def start(message: types.Message):
             await bot.send_message(int(message.get_args().split(' ')[0]), 'Вам были начислены за приведенного друга:\n'
                                                                           '    - 5000$\n'
                                                                           '    - 100 опыта')
-
+    else:
+        await bot.send_message(message.chat.id, f'Привет, я являюсь игровым ботом. Все мои команды по кнопке /help')
 
 # /help Помощь
 @dp.message_handler(commands='help')
@@ -1200,7 +1307,7 @@ async def top(message):
     users_info = database.users.find().sort('exp', -1)
     num = 1
     for user in users_info:
-        msg_data.append(f'{num}. {await username_2(user["id"], user["username"])} - {user["exp"]} опыта\n')
+        msg_data.append(f'{num}. {await username_2(user["id"], user["firstname"])} - {user["exp"]} опыта\n')
         num += 1
         if num == 16:
             await bot.send_message(message.chat.id, ''.join(msg_data), parse_mode='HTML')
@@ -1228,7 +1335,8 @@ async def refer(message):
     await bot.send_message(message.chat.id,
                            f'{await username(message)}, по этой ссылке ваш друг получит 2500$ и 50 опыта\n'
                            f'ВЫ получите 5000$ и 100 опыта\n'
-                           f'https://t.me/Mak023_bot?start={message.from_user.id}', parse_mode='HTML')
+                           f'https://t.me/Mak023_bot?start={message.from_user.id}', parse_mode='HTML',
+                           disable_web_page_preview=True)
 
 
 # Тег
@@ -1236,6 +1344,7 @@ async def refer(message):
 async def tagg(message: types.Message):
     id = int(message.get_args())
     await message.reply(await username_2(id, 'пользователь'), parse_mode='HTML')
+
 
 """@dp.callback_query_handler(lambda callback: 'vuz_' in callback.data)
 async def vuz(callback: types.CallbackQuery):
@@ -1252,6 +1361,7 @@ async def vuz(callback: types.CallbackQuery):
                                  callback_data=f'start_vu_{name_job}'),
             InlineKeyboardButton('Отмена', callback_data='otmena')), parse_mode='HTML')"""
 
+
 # Тегает
 async def username(message):
     if message.from_user.username is None:
@@ -1266,6 +1376,7 @@ async def username_2(user_id, username):
 
 # Запись нового пользователя в БД
 async def check_user(message):
+    tz = pytz.timezone('Etc/GMT-3')
     user_id = message.from_user.id
     username = message.from_user.username
     firstname = message.from_user.first_name
@@ -1286,11 +1397,59 @@ async def check_user(message):
                                    'username': username,
                                    'firstname': firstname,
                                    'oil': 0,
-                                   'food': 0})
+                                   'food': 0,
+                                   'last_time': str(datetime.now(tz=tz)).split('.')[0]})
     else:
         if message.from_user.username != user['username'] or message.from_user.first_name != user['firstname']:
             database.users.update_one({'id': user_id}, {'$set': {'username': username,
-                                                                 'firstname': firstname}})
+                                                                 'firstname': firstname,
+                                                                 'last_time': str(datetime.now(tz=tz)).split('.')[0]}})
+        else:
+            database.users.update_one({'id': user_id}, {'$set': {'last_time': str(datetime.now(tz=tz)).split('.')[0]}})
+
+
+async def check_president():
+    tz = pytz.timezone('Etc/GMT-3')
+    all_countries = list(database.countries.find({'president': {'$ne': 0}}))
+    for country in all_countries:
+        president_info = database.users.find_one({'id': country['president']})
+        date, time = president_info['last_time'].split(' ')
+        year, month, day = date.split('-')
+        hour, minute, second = time.split(':')
+        time_job = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+        time_now = datetime(datetime.now(tz=tz).year, datetime.now(tz=tz).month,
+                            datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
+                            datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
+        result = time_now - time_job
+        if 'days' in str(result) and int(str(result).split(' ')[0]) > 7:
+            database.users.update_one({'id': country['president']}, {'$set': {'president_country': 'нет'}})
+            users_info = database.users.find({'citizen_country': country['country']})
+            for user in users_info:
+                database.users.update_one({'id': user['id']}, {'$set': {'citizen_country': 'нет'}})
+            with open(f'{os.getcwd()}/res/countries.txt', 'r', encoding='utf-8') as f:
+                while True:
+                    line = f.readline()
+                    if not line:
+                        break
+                    else:
+                        countries_settings = line.replace('\n', '').split('.')
+                        if countries_settings[0] == country['country']:
+                            database.countries.update_one({'country': country['country']}, {'$set': {
+                                'president': 0,
+                                'cash': int(countries_settings[1]),
+                                'oil': int(countries_settings[2]),
+                                'food': int(countries_settings[3]),
+                                'territory': int(countries_settings[4]),
+                                'level': 0,
+                                'max_people': int(countries_settings[5]),
+                                'terr_for_farmers': int(countries_settings[6]),
+                                'cost': int(countries_settings[7]),
+                                'nalog_job': 1
+                            }})
+                            break
+            await bot.send_message(country['president'],
+                                   f'{username_2(country["president"], president_info["firstname"])}, вы были неактивны {int(str(result).split(" ")[0])} дней, поэтому ваша страна {country["country"]} была расформирована и возврату не подлежит!',
+                                   parse_mode='HTML')
 
 
 # Отмечает пользователя (тегает)
@@ -1340,7 +1499,6 @@ if __name__ == '__main__':
     from handlers123 import joke
     from handlers123.shop import market
 
-    
     # jobs
     autocreater.register_handlers_autocreater(dp)
     feldsher.register_handlers_feldsher(dp)

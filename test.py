@@ -1,7 +1,8 @@
 import random
 
 from pymongo.mongo_client import MongoClient
-
+from datetime import datetime
+import pytz
 # БД
 database = MongoClient(
     "mongodb+srv://maksemqwerty:maksem228@cluster0.mylnsur.mongodb.net/?retryWrites=true&w=majority").data
@@ -9,7 +10,11 @@ database = MongoClient(
 res_database = MongoClient(
     "mongodb+srv://maksemqwerty:maksem228@cluster0.mylnsur.mongodb.net/?retryWrites=true&w=majority").res
 
-info = list(database.cars.find())
+info = list(database.users.find())
 
-for car in info:
-    database.cars.update_one({'name_car': car['name_car']}, {'$set': {'cost': car['cost'] * random.randint(2,5)}})
+num = 0
+for user in info:
+    num += 1
+    tz = pytz.timezone('Etc/GMT-3')
+    database.users.update_one({'id': user['id']}, {'$set': {'last_time': str(datetime.now(tz=tz)).split('.')[0]}})
+    print(f'{num} из {len(info)}')
