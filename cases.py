@@ -31,6 +31,7 @@ class Database:
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 10_000
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
+        user = database.users.find_one({'id': int(callback.from_user.id)})
         if 'cash' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
 
@@ -41,8 +42,8 @@ class Database:
     async def give_prize_in_middle_case(self, callback: types.CallbackQuery, prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 500_000
-        
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
+        user = database.users.find_one({'id': int(callback.from_user.id)})
         if 'cash' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
 
@@ -79,6 +80,7 @@ class Database:
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 1_500_000
         database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
+        user = database.users.find_one({'id': int(callback.from_user.id)})
         if 'cash' in prize[1]:
             database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
         elif 'exp' in prize[1]:
@@ -123,21 +125,21 @@ class Cases:
 
         match prize:
             case 'money':
-                rand = random.randint(0, 4)
+                rand = random.randint(0, 10)
                 if rand == 1:
-                    money = random.randint(300, 7000)
+                    money = random.randint(8000, 100000)
                     return [money, 'cash']
                 else:
                     money = random.randint(100, 8000)
                     return [money, 'cash']
 
             case 'exp':
-                rand = random.randint(0, 6)
+                rand = random.randint(0, 10)
                 if rand == 1:
-                    exp = random.randint(50, 1000)
+                    exp = random.randint(1000, 10000)
                     return [exp, 'exp']
                 else:
-                    exp = random.randint(50, 200)
+                    exp = random.randint(50, 1000)
                     return [exp, 'exp']
 
     async def open_middle_case(self):
@@ -145,21 +147,21 @@ class Cases:
         prize = random.choice(prizes)
         match prize:
             case 'money':
-                rand = random.randint(0, 4)
+                rand = random.randint(0, 8)
                 if rand == 1:
-                    money = random.randint(350_000, 750_000)
+                    money = random.randint(700_000, 1_500_000)
                     return [money, 'cash']
                 else:
-                    money = random.randint(100_000, 400_000)
+                    money = random.randint(100_000, 700_000)
                     return [money, 'cash']
 
             case 'exp':
-                rand = random.randint(0, 6)
+                rand = random.randint(0, 8)
                 if rand == 1:
-                    exp = random.randint(700, 10_000)
+                    exp = random.randint(7000, 20000)
                     return [exp, 'exp']
                 else:
-                    exp = random.randint(100, 3500)
+                    exp = random.randint(100, 7000)
                     return [exp, 'exp']
 
             case 'car':
@@ -188,21 +190,21 @@ class Cases:
         prize = random.choice(prizes)
         match prize:
             case 'money':
-                rand = random.randint(0, 4)
+                rand = random.randint(0, 8)
                 if rand == 1:
-                    money = random.randint(750_000, 4_000_000)
+                    money = random.randint(2_000_000, 10_000_000)
                     return [money, '$']
                 else:
                     money = random.randint(650_000, 2_000_000)
                     return [money, '$']
 
             case 'exp':
-                rand = random.randint(0, 4)
+                rand = random.randint(0, 8)
                 if rand == 1:
-                    exp = random.randint(5000, 30000)
+                    exp = random.randint(30000, 80000)
                     return [exp, 'exp']
                 else:
-                    exp = random.randint(2500, 14000)
+                    exp = random.randint(8000, 30000)
                     return [exp, 'exp']
 
             case 'car':

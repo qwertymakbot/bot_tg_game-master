@@ -60,7 +60,7 @@ async def work(message: types.Message):
                                        parse_mode='HTML')
             else:
                 rand_num = random.randint(1, 10)
-                if rand_num == 1 or True:  # Если заболел
+                if rand_num == 1:  # Если заболел
 
                     all_diseases = database.diseases.find()
                     disease_info = random.choice(list(all_diseases))

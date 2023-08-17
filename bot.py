@@ -82,6 +82,13 @@ async def on_startup(_):
     tz = pytz.timezone('Etc/GMT-3')
     scheduler.add_job(check_president, "cron",
                       day_of_week='mon', timezone=tz)
+    # бэкап в 8 утра
+    scheduler.add_job(backup, "cron",
+                      hour=8, timezone=tz)
+    # бэкап в 8 вечера
+    scheduler.add_job(backup, "cron",
+                      hour=16, timezone=tz)
+
     data_vuz = list(res_database.vuz.find())
     for info_vuz in data_vuz:
         # Получение переменных с строки
@@ -148,6 +155,31 @@ async def on_startup(_):
                                       args=(info_job['id'], info_job['id']), id=str(info_job['id']), timezone=tz)
         except:
             pass
+    data_disease = list(res_database.disease.find({'disease': True}))
+    for info_disease in data_disease:
+        try:
+            # Получение переменных с строки
+            tz = pytz.timezone('Etc/GMT-3')
+
+            date, time = info_disease['time'].split(' ')
+            year, month, day = date.split('-')
+            hour, minute, second = time.split(':')
+            time_vuz = datetime(int(year), int(month), int(day), int(hour), int(minute), int(second))
+            time_now = datetime(datetime.now(tz=tz).year, datetime.now(tz=tz).month,
+                                datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
+                                datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
+            result = time_vuz - time_now
+            # Если уже окончил
+
+            if '-' in str(result):
+                await end_disease(info_disease['id'])
+            else:
+                scheduler.add_job(end_disease, "date",
+                                  run_date=info_disease['time'],
+                                  args=(info_disease['id'],), timezone=tz)
+        except:
+            pass
+
     # Стройка бизнеса
     build_data = list(res_database.build_bus.find())
     for build in build_data:
@@ -593,7 +625,11 @@ async def isSubsc(message):
                                f'{await username(message)}, чтобы получить доступ к команде, вы должны состоять в моем канале @makbotinfo',
                                parse_mode='HTML')
 
-
+# Окончание болезни
+async def end_disease(user_id):
+    res_database.disease.delete_one({'id': user_id})
+    user_info = database.users.find_one({'id': user_id})
+    await bot.send_message(user_id, f'{await username_2(user_id, user_info["firstname"])}, вы выздоровили!', parse_mode='HTML')
 class Cong(StatesGroup):
     texta = State()
 
@@ -1487,6 +1523,66 @@ async def start_vuz(user_id, name_job):
                            f'Теперь вам доступна профессия {name_job}', parse_mode='HTML')
 
 
+# Бэкап БД
+async def backup():
+    # users
+    list_users= []
+    users = list(database.users.find())
+    tz = pytz.timezone('Etc/GMT-3')
+    for user in users:
+        user['_id'] = {'$oid': str(user["_id"])}
+        list_users.append(user)
+    with open(f'{os.getcwd()}/res/backup/users/users_{datetime.now(tz=tz).day}.{datetime.now(tz=tz).month} ({datetime.now(tz=tz).hour}.{datetime.now(tz=tz).minute}).json', 'w', encoding='utf-8') as f:
+        json.dump(list_users, f, ensure_ascii=False, indent=2)
+        f.close()
+    # countries
+    list_countries = []
+    countries = list(database.countries.find())
+    tz = pytz.timezone('Etc/GMT-3')
+    for country in countries:
+        country['_id'] = {'$oid': str(country["_id"])}
+        list_countries.append(country)
+    with open(
+            f'{os.getcwd()}/res/backup/countries/countries_{datetime.now(tz=tz).day}.{datetime.now(tz=tz).month} ({datetime.now(tz=tz).hour}.{datetime.now(tz=tz).minute}).json',
+            'w', encoding='utf-8') as f:
+        json.dump(list_countries, f, ensure_ascii=False, indent=2)
+        f.close()
+    # users_bus
+    list_users_bus = []
+    users_bus = list(database.users_bus.find())
+    tz = pytz.timezone('Etc/GMT-3')
+    for user_bus in users_bus:
+        user_bus['_id'] = {'$oid': str(user_bus["_id"])}
+        list_users_bus.append(user_bus)
+    with open(
+            f'{os.getcwd()}/res/backup/users_bus/users_bus_{datetime.now(tz=tz).day}.{datetime.now(tz=tz).month} ({datetime.now(tz=tz).hour}.{datetime.now(tz=tz).minute}).json',
+            'w', encoding='utf-8') as f:
+        json.dump(list_users_bus, f, ensure_ascii=False, indent=2)
+        f.close()
+    # users_cars
+    list_users_cars = []
+    users_cars = list(database.users_cars.find())
+    tz = pytz.timezone('Etc/GMT-3')
+    for users_car in users_cars:
+        users_car['_id'] = {'$oid': str(users_car["_id"])}
+        list_users_cars.append(users_car)
+    with open(
+            f'{os.getcwd()}/res/backup/users_cars/users_cars_{datetime.now(tz=tz).day}.{datetime.now(tz=tz).month} ({datetime.now(tz=tz).hour}.{datetime.now(tz=tz).minute}).json',
+            'w', encoding='utf-8') as f:
+        json.dump(list_users_cars, f, ensure_ascii=False, indent=2)
+        f.close()
+    # education
+    list_education = []
+    education = list(database.education.find())
+    tz = pytz.timezone('Etc/GMT-3')
+    for educatio in education:
+        educatio['_id'] = {'$oid': str(educatio["_id"])}
+        list_education.append(educatio)
+    with open(
+            f'{os.getcwd()}/res/backup/education/education_{datetime.now(tz=tz).day}.{datetime.now(tz=tz).month} ({datetime.now(tz=tz).hour}.{datetime.now(tz=tz).minute}).json',
+            'w', encoding='utf-8') as f:
+        json.dump(list_education, f, ensure_ascii=False, indent=2)
+        f.close()
 scheduler = AsyncIOScheduler()
 scheduler.start()
 if __name__ == '__main__':
