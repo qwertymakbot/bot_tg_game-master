@@ -141,7 +141,7 @@ async def work(message: types.Message):
                                                           {'$set': {
                                                               'food': country_info['food'] - job_info['need_food']}})
                             # Если есть машина
-                            car_info = database.users_cars.find_one({'id': user_id})
+                            car_info = database.users_cars.find_one({'$and': [{'id': user_id}, {'active': True}]})
                             if car_info is not None:
                                 need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
                                 if user_info['oil'] >= need_oil:
@@ -150,7 +150,7 @@ async def work(message: types.Message):
                                         {'id': user_id},
                                         {'$set': {'oil': user_info['oil'] - need_oil}})
                                     # Вычисление времени на работу едя на машине
-                                    job_time = int(job_info['job_time'] * (car_info['save_job_time'] / 100))
+                                    job_time = job_info['job_time'] - round(job_info['job_time'] * (car_info['save_job_time'] / 100))
                                     await bot.send_photo(message.chat.id,
                                                          photo=InputFile(
                                                              f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
@@ -207,19 +207,69 @@ async def work(message: types.Message):
                                                    parse_mode='HTML')
                     else:  # Если не гражданин
                         job_info = database.jobs.find_one({'name_job': user_info['job']})
-                        res_database.job.update_one({'id': user_id},
-                                                    {'$set': {'time': await add_time_min(job_info['job_time']),
-                                                              'working': True}})
-                        tz = pytz.timezone('Etc/GMT-3')
-                        scheduler.add_job(end_job_no_citizen, "date", run_date=await add_time_min(job_info['job_time']),
-                                          args=(message, user_info['job']), id=str(user_id), timezone=tz)
-                        arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
-                        await bot.send_photo(message.chat.id,
-                                             photo=InputFile(
-                                                 f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
-                                             caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
-                                                     f'Через {job_info["job_time"]} минут вы закончите!',
-                                             parse_mode='HTML')
+                        if user_info['food'] >= job_info['need_food']:
+                            arr = next(os.walk(f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}'))[2]
+                            # Если есть машина
+                            car_info = database.users_cars.find_one({'$and': [{'id': user_id}, {'active': True}]})
+                            if car_info is not None:
+                                need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
+                                if user_info['oil'] >= need_oil:
+                                    # Сжигаем топливо
+                                    database.users.update_one(
+                                        {'id': user_id},
+                                        {'$set': {'oil': user_info['oil'] - need_oil}})
+                                    # Вычисление времени на работу едя на машине
+                                    job_time = job_info['job_time'] - round(job_info['job_time'] * (car_info['save_job_time'] / 100))
+
+                                    await bot.send_photo(message.chat.id,
+                                                         photo=InputFile(
+                                                             f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
+                                                         caption=f'{await username(message)}, вы поехали на машине и начали работать по профессии {user_info["job"].lower()}\n'
+                                                                 f'Через {job_time} минут вы закончите!\n'
+                                                                 f'Вы потратили:\n'
+                                                                 f'🖤 -{need_oil}л', parse_mode='HTML')
+                                    # SCHEDULER
+                                    res_database.job.update_one({'id': user_id},
+                                                                {'$set': {'time': await add_time_min(job_time),
+                                                                          'working': True}})
+                                    tz = pytz.timezone('Etc/GMT-3')
+                                    scheduler.add_job(end_job_no_citizen, "date",
+                                                      run_date=await add_time_min(job_info['job_time']),
+                                                      args=(message, user_info['job']), id=str(user_id), timezone=tz)
+                                # Если нет топлива
+                                else:
+                                    await bot.send_photo(message.chat.id,
+                                                         photo=InputFile(
+                                                             f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
+                                                         caption=f'{await username(message)}, в вашем {car_info["car"]} недостаточно топлива, вы пошли на работу пешком и начали работать по профессии {user_info["job"].lower()}\n'
+                                                                 f'Через {job_info["job_time"]} минут вы закончите!',
+                                                         parse_mode='HTML')
+                                    # SCHEDULER
+                                    res_database.job.update_one({'id': user_id},
+                                                                {'$set': {
+                                                                    'time': await add_time_min(job_info['job_time']),
+                                                                    'working': True}})
+
+                                    tz = pytz.timezone('Etc/GMT-3')
+                                    scheduler.add_job(end_job_no_citizen, "date",
+                                                      run_date=await add_time_min(job_info['job_time']),
+                                                      args=(message, user_info['job']), id=str(user_id), timezone=tz)
+                            else:
+                                res_database.job.update_one({'id': user_id},
+                                                            {'$set': {'time': await add_time_min(job_info['job_time']),
+                                                                      'working': True}})
+                                tz = pytz.timezone('Etc/GMT-3')
+                                scheduler.add_job(end_job_no_citizen, "date", run_date=await add_time_min(job_info['job_time']),
+                                                  args=(message, user_info['job']), id=str(user_id), timezone=tz)
+
+                                await bot.send_photo(message.chat.id,
+                                                     photo=InputFile(
+                                                         f'{os.getcwd()}/res/jobs_pic/{user_info["job"]}/{random.choice(arr)}'),
+                                                     caption=f'{await username(message)}, вы начали работать по профессии {user_info["job"].lower()}\n'
+                                                             f'Через {job_info["job_time"]} минут вы закончите!',
+                                                     parse_mode='HTML')
+                        else:
+                            await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно еды!', parse_mode='HTML')
     else:
         await bot.send_message(message.chat.id, f'{await username(message)}, вы нигде не работаете!', parse_mode='HTML')
 

@@ -656,6 +656,43 @@ async def text(message, state: FSMContext):
             pass
     await message.reply(f'Текст разослан {num} раз')
 
+@dp.message_handler(content_types='text', text=['Ивент', 'ивент', 'Событие', 'событие'])
+async def evets(message: types.Message):
+    await message.reply(f'Проходит событие на 2 БП (один БП для евро, второй для ру, примерно 16$ общий выигрыш) \n'
+                        f'Чтобы быть участником события вам необходимо:\n'
+                        f'1. Быть подписанным на @makbotinfo\n'
+                        f'2. Состоять в чате @wotblitz_tt\n\n'
+                        f'А победитель будет выбран по тикетам - кто больше наберет\n'
+                        f'Тикеты можно купить за 1кк по команде /ticket\n'
+                        f'Тикет даётся за каждого приведенного друга по вашей ссылке /refer\n'
+                        f'Чтобы просмотреть кол-во ваших тикетов /myticket\n\n'
+                        f'Конец события: 26.08 в 20.00')
+
+@dp.message_handler(commands='myticket')
+async def myticket(message: types.Message):
+    event_info = res_database.event.find_one({'id': message.from_user.id})
+    if event_info is None:
+        await message.reply(f'У вас нет тикетов')
+    else:
+        await message.reply(f'У вас {event_info["count"]} тикетов')
+
+@dp.message_handler(commands='ticket')
+async def ticket(message: types.Message):
+    await check_user(message)
+    user_info = database.users.find_one({'id': message.from_user.id})
+    if user_info['cash'] >= 1_000_000:
+        event_info = res_database.event.find_one({'id': message.from_user.id})
+        database.users.update_one({'id': message.from_user.id}, {'$set': {'cash': user_info['cash'] - 1_000_000}})
+        if event_info is None:
+            res_database.event.insert_one({'id': message.from_user.id,
+                                           'count': 1})
+            await bot.send_message(message.chat.id, f'{await username(message)}, вы приобрели 1 тикет', parse_mode='HTML')
+        else:
+            res_database.event.update_one({'id': message.from_user.id}, {'$set': {'count': event_info['count'] + 1}})
+            await bot.send_message(message.chat.id, f'{await username(message)}, вы приобрели 1 тикет',
+                                   parse_mode='HTML')
+    else:
+        await bot.send_message(message.chat.id, f'{await username(message)}, для покупки тикета вам нужно иметь на балансе 1кк', parse_mode='HTML')
 
 @dp.message_handler(commands='start')
 async def start(message: types.Message):
@@ -674,7 +711,15 @@ async def start(message: types.Message):
                                                 'exp': user_info["exp"] + 100}})
             await bot.send_message(int(message.get_args().split(' ')[0]), 'Вам были начислены за приведенного друга:\n'
                                                                           '    - 5000$\n'
-                                                                          '    - 100 опыта')
+                                                                          '    - 100 опыта\n'
+                                                                          '    - 1 тикет')
+        event_info = res_database.event.find_one({'id': int(message.get_args().split(' ')[0])})
+        if event_info is None:
+            res_database.event.insert_one({'id': int(message.get_args().split(' ')[0]),
+                                           'count': 1})
+        else:
+            res_database.event.update_one({'id': int(message.get_args().split(' ')[0])}, {'$set': {'count': event_info['count'] + 1}})
+
     else:
         await bot.send_message(message.chat.id, f'Привет, я являюсь игровым ботом. Все мои команды по кнопке /help')
 
@@ -1370,7 +1415,7 @@ async def top(message):
 async def refer(message):
     await bot.send_message(message.chat.id,
                            f'{await username(message)}, по этой ссылке ваш друг получит 2500$ и 50 опыта\n'
-                           f'ВЫ получите 5000$ и 100 опыта\n'
+                           f'ВЫ получите 5000$ и 100 опыта и 1 тикет\n'
                            f'https://t.me/Mak023_bot?start={message.from_user.id}', parse_mode='HTML',
                            disable_web_page_preview=True)
 
@@ -1433,7 +1478,7 @@ async def check_user(message):
                                    'username': username,
                                    'firstname': firstname,
                                    'oil': 0,
-                                   'food': 0,
+                                   'food': 500,
                                    'last_time': str(datetime.now(tz=tz)).split('.')[0]})
     else:
         if message.from_user.username != user['username'] or message.from_user.first_name != user['firstname']:
