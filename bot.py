@@ -69,7 +69,7 @@ def imports():
 # Разбиение на триады
 import locale
 
-# locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
+locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
 #  Логгирование
 logging.basicConfig(level=logging.INFO)
 
@@ -727,23 +727,15 @@ async def start(message: types.Message):
 @dp.message_handler(commands='help')
 async def help(message):
     await message.delete()
-    await bot.send_message(message.chat.id, f'Я, паспорт, профиль, баланс - Мой профиль\n'
-                                            f'Страны - Список стран\n'
-                                            f'/citizen - Стать гражданином\n'
-                                            f'/leave_citizen - Покинуть страну\n'
-                                            f'/cars - Инфо о машинах\n'
-                                            f'/shop - Магазин\n'
-                                            f'/bonus - Получить бонус\n'
-                                            f'/bus - Бизнесы\n'
-                                            f'/games - Список игр\n'
-                                            f'Работа, работать - Работать на работе\n'
-                                            f'Работы - Список работ\n'
-                                            f'Уволиться - Уволиться с работы\n'
-                                            f'Мои команды - Выводит список доп. команд\n'
-                                            f'Топ - Выводит топ игроков по опыту\n'
-                                            f'Топ чата - Выводит топ чата\n'
-                                            f'Пообщаться с ботом написать сообщение: Бот .... (пример: бот какая погода в бресте)\n'
-                                            f'Мой канал: @makbotinfo')
+    await bot.send_message(message.chat.id, f'<a href="https://telegra.ph/Obshchie-komandy-08-18">Общие команды</a>\n'
+                                            f'<a href="https://telegra.ph/Modul-Feldsher-08-14">Модуль Фельдшер</a>\n'
+                                            f'<a href="https://telegra.ph/Modul-Krupe-08-14">Модуль Крупье</a>\n'
+                                            f'<a href="https://telegra.ph/Modul-Avtosborshchik-08-14">Модуль Автосборщик</a>\n'
+                                            f'<a href="https://telegra.ph/Modul-Stroitel-08-14">Модуль Строитель</a>\n'
+                                            f'<a href="https://telegra.ph/Modul-Predprinimatel-08-14">Модуль Предприниматель</a>\n'
+                                            f'<a href="https://telegra.ph/Gppo-08-05">Модуль Образование</a>\n'
+                                            f'<a href="https://telegra.ph/Nrr-08-05">Модуль Президент</a>\n\n'
+                                            f'Мой канал: @makbotinfo', parse_mode='HTML', disable_web_page_preview=True)
 
 
 # Игры
@@ -1000,9 +992,8 @@ async def countries(message):
                                        callback_data=f'buy_country_{country["country"]}')
             buttons.insert(but)
         else:
-            idname = await bot.get_chat(country['president'])
-            named = quote_html(idname.username)
-            but = InlineKeyboardButton(f'{country["country"]} президент - {named}',
+            pres_info = database.users.find_one({'id': country['president']})
+            but = InlineKeyboardButton(f'{country["country"]} президент - {pres_info["firstname"]}',
                                        callback_data='president')
             buttons.insert(but)
     await bot.send_message(message.chat.id, text='🌐 Список стран 🌐',

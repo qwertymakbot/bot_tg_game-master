@@ -10,11 +10,10 @@ database = MongoClient(
 res_database = MongoClient(
     "mongodb+srv://maksemqwerty:maksem228@cluster0.mylnsur.mongodb.net/?retryWrites=true&w=majority").res
 
-info = list(database.users.find())
+info = list(database.businesses.find())
 
 num = 0
 for user in info:
     num += 1
-    tz = pytz.timezone('Etc/GMT-3')
-    database.users.update_one({'id': user['id']}, {'$set': {'last_time': str(datetime.now(tz=tz)).split('.')[0]}})
+    database.businesses.update_one({'product': user['product']}, {'$set': {'cost': user['cost'] * random.randint(2,5)}})
     print(f'{num} из {len(info)}')
