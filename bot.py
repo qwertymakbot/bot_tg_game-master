@@ -1,37 +1,32 @@
-from aiogram import executor, types, Dispatcher
+import asyncio
+import datetime
 import json
 import logging
-import sqlite3
-import os
-import time
-from aiogram.utils.markdown import hlink
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from create_bot import dp
-from create_bot import bot
-from aiogram.utils.markdown import quote_html
-from time import perf_counter
-from aiogram.types import InputFile
-import pytz
-import datetime
-import asyncio
-from dateutil import parser
-import random
 import math
-from gpytranslate import Translator
-import openai
+import os
+import random
+from datetime import datetime, timedelta
+from time import perf_counter
+
 import openai_async
+import pytz
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+from aiogram import executor, types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-import hmac
-import json
-import hashlib
-import requests
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InputFile
+from aiogram.utils.markdown import hlink
+from aiogram.utils.markdown import quote_html
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from dateutil import parser
+from gpytranslate import Translator
+
+from create_bot import bot
+from create_bot import dp
+from filters import antiflood
 from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDice, IsDarts, IsBowling, \
     IsSlot, ShareMoney
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from datetime import datetime, timedelta
-from PIL import Image, ImageDraw, ImageFont, ImageOps
-from filters import antiflood
 
 # from background import keep_alive
 
@@ -76,8 +71,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Вызывается при старте
 async def on_startup(_):
-    print('БОТ ЕБАШИТ')
-    return
+
     # проверка активности президентов
     tz = pytz.timezone('Etc/GMT-3')
     scheduler.add_job(check_president, "cron",
@@ -246,7 +240,7 @@ async def on_startup(_):
             scheduler.add_job(end_autoschool, "date",
                               run_date=autoschool_info['time'],
                               args=(autoschool_info['id'],), timezone=tz)
-    print('Бот онлайн')
+    print('БОТ ЕБАШИТ')
 
 
 # Проверка больше ли еды в стране
@@ -1085,7 +1079,7 @@ async def n1(message):
 
 @dp.message_handler(IsQuestions())
 async def text(message):
-    token_openai = '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'
+    token_openai = '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'
     chats = [-1001920241477]
     if message.reply_to_message and message.reply_to_message['from'][
         'is_bot'] and message.chat.id in chats or 'бот' in message.text.split() and message.chat.id in chats or 'Бот' in message.text.split() and message.chat.id in chats:
@@ -1629,7 +1623,6 @@ if __name__ == '__main__':
     from handlers123.shop import inline_shop
     from handlers123.jobs import autocreater, feldsher, predprinimatel, president, stroitel, krupye
     from handlers123 import joke
-    from handlers123.shop import market
 
     # jobs
     autocreater.register_handlers_autocreater(dp)
