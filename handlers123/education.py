@@ -603,11 +603,12 @@ async def vuz(message: types.Message):
             return
     educ_info = database.education.find_one({'id': message.from_user.id})
 
-    # Если не окончил
-    if educ_info['status'] != 'окончил':
+    if database.education.find_one({'id': message.from_user.id}) is None or database.education.find_one({'id': message.from_user.id})['status'] != 'окончил':
         await bot.send_message(message.chat.id, f'{await username(message)}, для начала вам нужно окончить школу!',
                                reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton('Начать',
-                                                                                            callback_data='go_school')), parse_mode='HTML')
+                                                                                            callback_data='go_school')),
+                               parse_mode='HTML')
+        return
     # Если окончил
     else:
         # Работы, которые еще не получил

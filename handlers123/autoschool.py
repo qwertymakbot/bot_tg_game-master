@@ -9,6 +9,13 @@ from datetime import datetime
 async def autoschool(message: types.Message):
     await check_user(message)
     autoschool_info = res_database.autoschool.find_one({'id': message.from_user.id})
+    if database.education.find_one({'id': message.from_user.id}) is None or \
+            database.education.find_one({'id': message.from_user.id})['status'] != 'окончил':
+        await bot.send_message(message.chat.id, f'{await username(message)}, для начала вам нужно окончить школу!',
+                               reply_markup=InlineKeyboardMarkup().add(InlineKeyboardButton('Начать',
+                                                                                            callback_data='go_school')),
+                               parse_mode='HTML')
+        return
     if database.education.find_one({'id': message.from_user.id})['auto_school'] == 'да':
         await bot.send_message(message.chat.id, f'{await username(message)}, у вас уже есть категория B',
                                parse_mode='HTML')
@@ -48,16 +55,23 @@ async def autoschool(message: types.Message):
 @dp.callback_query_handler(lambda callback: 'autoschl_yes_' in callback.data)
 async def autoschool_yes(callback: types.CallbackQuery):
     if callback.data.replace('autoschl_yes_', '') == str(callback.from_user.id)[-3::]:
-        tz = pytz.timezone('Etc/GMT-3')
-        # Добавление в бд инфы о болезни
-        res_database.autoschool.insert_one({'id': callback.from_user.id,
-                                            'time': await add_time_min(4320)})
-        scheduler.add_job(end_autoschool, "date",
-                          run_date=await add_time_min(4320),
-                          args=(callback.from_user.id,), timezone=tz)
-        await bot.send_message(callback.message.chat.id,
-                               f'{await username(callback)}, вы начали обучение, через 3 дня вы закончите!',
-                               parse_mode='HTML')
+        user_info = database.users.find_one({'id': callback.from_user.id})
+        if user_info['cash'] >= 1_000_000 and user_info['exp'] >= 50_000 and user_info['food'] >= 7_500 and user_info['oil'] >= 1_000:
+
+            tz = pytz.timezone('Etc/GMT-3')
+            # Добавление в бд инфы о болезни
+            res_database.autoschool.insert_one({'id': callback.from_user.id,
+                                                'time': await add_time_min(4320)})
+            scheduler.add_job(end_autoschool, "date",
+                              run_date=await add_time_min(4320),
+                              args=(callback.from_user.id,), timezone=tz)
+            await bot.send_message(callback.message.chat.id,
+                                   f'{await username(callback)}, вы начали обучение, через 3 дня вы закончите!',
+                                   parse_mode='HTML')
+        else:
+            await callback.message.edit_text(
+                                   f'{await username(callback)}, у вас недостаточно ресурсов!',
+                                   parse_mode='HTML')
     else:
         await callback.answer('Это предназначено не вам!')
 

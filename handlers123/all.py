@@ -1528,7 +1528,6 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
         all_ads = list(res_database.marketplace.find({'product': product}))
         if str(callback.from_user.id)[-3::] == user_id:
             user_info = database.users.find_one({'id': callback.from_user.id})
-            print(all_ads)
             seller_info = database.users.find_one({'id': all_ads[int(page)]['id']})
             if user_info['id'] == seller_info['id']:
                 await callback.message.edit_text(f'{await username(callback)}, вы не можете купить сами у себя!', parse_mode='HTML')
@@ -1640,10 +1639,11 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
             res_database.marketplace.delete_one(
                 {'$and': [{'id': all_ads[int(page)]['id']}, {'product': all_ads[int(page)]['product']}]})
 
-            if all_ads[int(page)]['product'] == 'food' or all_ads[int(page)]['product'] == 'oil':
-                user_info = database.users.find_one({'id': callback.from_user.id})
-                database.users.update_one({'id': user_id},{'$set':{all_ads[int(page)]['product']: user_info[all_ads[int(page)]['product']] +
-                                                                          all_ads[int(page)]['quantity']}})
+            product = str(all_ads[int(page)]['product'])
+            user_info = database.users.find_one({'id': callback.from_user.id})
+            database.users.update_one({'id': callback.from_user.id}, {'$set': {product: user_info[product] +
+                                                                      all_ads[int(page)]['quantity']}})
+
             await callback.message.edit_text(f'{await username(callback)}, вы успешно сняли объявление!', parse_mode='HTML')
         else:
             await callback.answer('Это предназначено не вам!')

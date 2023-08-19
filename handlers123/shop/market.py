@@ -130,6 +130,7 @@ async def market_sale_food_price(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['price'] = int(message.text)
             data['id'] = message.from_user.id
+            data['product'] = 'food'
             data = await load_data(data)
             await Marketplace.sale_food(data=data)
             await state.finish()
@@ -174,6 +175,7 @@ async def market_sale_oil_price(message: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['price'] = int(message.text)
             data['id'] = message.from_user.id
+            data['product'] = 'oil'
             d = await load_data(data)
             await Marketplace.sale_oil(data=d)
         await state.finish()
@@ -188,7 +190,8 @@ async def load_data(data: dict):
     d = {
         'price': data['price'],
         'quantity': data['quantity'],
-        'id': data['id']
+        'id': data['id'],
+        'product': data['product']
     }
     print(d)
     return d
