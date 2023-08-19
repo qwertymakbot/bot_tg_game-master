@@ -282,7 +282,7 @@ async def little_case(callback: types.CallbackQuery):
         # Начисление награды
         await db.give_prize_in_little_case(callback=callback, prize=prize)
     else:
-        await bot.send_message(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+        await bot.send_message(callback.message.chat.id,f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
 
 async def middle_case(callback: types.CallbackQuery):
     db = Database()
@@ -376,7 +376,7 @@ async def middle_case(callback: types.CallbackQuery):
         await db.give_prize_in_middle_case(callback=callback, prize=prize)
 
     else:
-        await bot.send_message(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+        await bot.send_message(callback.message.chat.id,f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
 
 async def big_case(callback: types.CallbackQuery):
     db = Database()
@@ -451,4 +451,4 @@ async def big_case(callback: types.CallbackQuery):
         # Начисление награды
         await db.give_prize_in_big_case(callback=callback, prize=prize)
     else:
-        await bot.send_message(f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+        await bot.send_message(callback.message.chat.id,f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')

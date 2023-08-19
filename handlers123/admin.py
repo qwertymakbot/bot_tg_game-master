@@ -134,7 +134,7 @@ async def st_admin(message: types.Message):
                                                 'creator': False,
                                                 'chat_id': message.chat.id})
                 await bot.send_message(message.chat.id,
-                                       f'{await username(message.reply_to_message)}, вы были повышены до Младшего админа\n'
+                                       f'{await username(message.reply_to_message)}, вы были повышены до Старшего админа\n'
                                        f'Действие совершил: {await username(message)}', parse_mode='HTML')
             elif user_info['creator']:
                 await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
@@ -165,12 +165,13 @@ async def st_admin(message: types.Message):
 @dp.message_handler(content_types='text', text=['Разжаловать', 'разжаловать'])
 async def razjalov(message: types.Message):
     is_creator = await creator_check(message)
-    is_st_admin = database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})[
-        'st_admin']
     if database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]}) is None:
         await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
                                parse_mode='HTML')
         return
+    is_st_admin = database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})[
+        'st_admin']
+
     if is_creator:
         if message.reply_to_message:
             user_info = database_adm.admins.find_one(
@@ -456,6 +457,10 @@ async def ban(message: types.Message):
 
 # Проверка создатель или нет
 async def creator_check(message: types.Message):
+    creators = database_adm.admins.find({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})
+    for creator in creators:
+        if creator['id'] == message.from_user.id:
+            return True
     creator_info = await bot.get_chat_member(message.chat.id, message.from_user.id)
     creator = database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})
     if creator is None and creator_info['status'] == 'creator':

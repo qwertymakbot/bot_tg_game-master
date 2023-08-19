@@ -1028,7 +1028,8 @@ async def leave_citizen(message):
         await message.answer(f'{await username(message)}, президент не может покинуть страну', parse_mode='HTML')
 
     else:
-        if not user_data['working']:
+        job_info = res_database.job.find_one({'id': message.from_user.id})
+        if job_info is None or not job_info['working']:
             president_data = database.users.find_one({'president_country': user_data["citizen_country"]})
             database.users.update_one({'id': message.from_user.id}, {'$set': {'citizen_country': 'нет'}})
             await message.answer(
@@ -1079,7 +1080,7 @@ async def n1(message):
 
 @dp.message_handler(IsQuestions())
 async def text(message):
-    token_openai = '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'
+    token_openai = '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'
     chats = [-1001920241477]
     if message.reply_to_message and message.reply_to_message['from'][
         'is_bot'] and message.chat.id in chats or 'бот' in message.text.split() and message.chat.id in chats or 'Бот' in message.text.split() and message.chat.id in chats:

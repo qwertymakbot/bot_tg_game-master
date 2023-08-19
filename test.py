@@ -15,5 +15,5 @@ info = list(database.businesses.find())
 num = 0
 for user in info:
     num += 1
-    database.businesses.update_one({'product': user['product']}, {'$set': {'cost': user['cost'] * random.randint(2,5)}})
+    database.businesses.update_one({'product': user['product']}, {'$set': {'oil': user['oil'] * random.randint(100,200)}})
     print(f'{num} из {len(info)}')
