@@ -24,95 +24,185 @@ for car in list(database.cars.find()):
 
 
 class Database:
+
     def __init__(self):
         ...
 
-    async def give_prize_in_little_case(self, callback: types.CallbackQuery, prize):
+    async def give_prize_in_little_case(self, callback: types.CallbackQuery,
+                                        prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 10_000
-        database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
+        database.users.update_one(
+            {'id': callback.from_user.id},
+            {'$set': {
+                'cash': int(user['cash']) - case_price
+            }})
         user = database.users.find_one({'id': int(callback.from_user.id)})
         if 'cash' in prize[1]:
-            database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
+            database.users.update_one(
+                {'id': callback.from_user.id},
+                {'$set': {
+                    'cash': int(user['cash']) + prize[0]
+                }})
 
         elif 'exp' in prize[1]:
             user_exp = int(user['exp'])
-            database.users.update_one({'id': callback.from_user.id}, {'$set': {'exp': user_exp + prize[0]}})
+            database.users.update_one({'id': callback.from_user.id},
+                                      {'$set': {
+                                          'exp': user_exp + prize[0]
+                                      }})
 
-    async def give_prize_in_middle_case(self, callback: types.CallbackQuery, prize):
+    async def give_prize_in_middle_case(self, callback: types.CallbackQuery,
+                                        prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 500_000
-        database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
+        database.users.update_one(
+            {'id': callback.from_user.id},
+            {'$set': {
+                'cash': int(user['cash']) - case_price
+            }})
         user = database.users.find_one({'id': int(callback.from_user.id)})
         if 'cash' in prize[1]:
-            database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
+            database.users.update_one(
+                {'id': callback.from_user.id},
+                {'$set': {
+                    'cash': int(user['cash']) + prize[0]
+                }})
 
         elif 'exp' in prize[1]:
-            database.users.update_one({'id': callback.from_user.id}, {'$set': {'exp': int(user['exp']) + prize[0]}})
+            database.users.update_one(
+                {'id': callback.from_user.id},
+                {'$set': {
+                    'exp': int(user['exp']) + prize[0]
+                }})
 
         elif 'car' in prize[1]:
             car_info = database.cars.find_one({'name_car': prize[0]})
             user_cars = database.users_cars.find({'id': callback.from_user.id})
             if car_info['name_car'] in user_cars:
-                database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': user['cash'] + car_info['cost']}})
-                await bot.send_message(callback.message.chat.id, f'{await username(callback)}, данная модель уже есть в вашем гараже, вы получите компенсацию!', parse_mode='HTML')
-                return
-            else:
-                    database.users_cars.insert_one({
-                    'id': callback.from_user.id,
-                    'car': prize[0],
-                    'active': False,
-                    'fuel_per_hour': car_info['fuel_per_hour'],
-                    'save_job_time': car_info['save_job_time'],
-                    'cost': car_info['cost'],
-                    'hp': car_info['hp']
-                })
-        elif 'license' in prize[1]:
-            if user['auto_school'] == 'нет':
-                database.education.update_one({'id': callback.from_user.id}, {'$set': {'auto_school': 'да'}})
-            else:
-                database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': user['cash'] + 100_000,
-                                                                                   'exp': user['exp'] + 5_000}})
-                await bot.send_message(callback.message.chat.id, f'{await username(callback)}, права у вас уже имеются, вы получите компенсацию!', parse_mode='HTML')
-
-
-    async def give_prize_in_big_case(self, callback: types.CallbackQuery, prize):
-        user = database.users.find_one({'id': int(callback.from_user.id)})
-        case_price = 1_500_000
-        database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) - case_price}})
-        user = database.users.find_one({'id': int(callback.from_user.id)})
-        if 'cash' in prize[1]:
-            database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': int(user['cash']) + prize[0]}})
-        elif 'exp' in prize[1]:
-            database.users.update_one({'id': callback.from_user.id}, {'$set': {'exp': int(user['exp']) + prize[0]}})
-        elif 'car' in prize[1]:
-            car_info = database.cars.find_one({'name_car': prize[0]})
-            user_cars = database.users_cars.find({'id': callback.from_user.id})
-            if car_info['name_car'] in user_cars:
-                database.users.update_one({'id': callback.from_user.id},
-                                          {'$set': {'cash': user['cash'] + car_info['cost']}})
-                await bot.send_message(callback.message.chat.id,
-                                       f'{await username(callback)}, данная модель уже есть в вашем гараже, вы получите компенсацию!', parse_mode='HTML')
+                database.users.update_one(
+                    {'id': callback.from_user.id},
+                    {'$set': {
+                        'cash': user['cash'] + car_info['cost']
+                    }})
+                await bot.send_message(
+                    callback.message.chat.id,
+                    f'{await username(callback)}, данная модель уже есть в вашем гараже, вы получите компенсацию!',
+                    parse_mode='HTML')
                 return
             else:
                 database.users_cars.insert_one({
-                    'id': callback.from_user.id,
-                    'car': prize[0],
-                    'active': False,
-                    'fuel_per_hour': car_info['fuel_per_hour'],
-                    'save_job_time': car_info['save_job_time'],
-                    'cost': car_info['cost'],
-                    'hp': car_info['hp']
+                    'id':
+                    callback.from_user.id,
+                    'car':
+                    prize[0],
+                    'active':
+                    False,
+                    'fuel_per_hour':
+                    car_info['fuel_per_hour'],
+                    'save_job_time':
+                    car_info['save_job_time'],
+                    'cost':
+                    car_info['cost'],
+                    'hp':
+                    car_info['hp']
+                })
+        elif 'license' in prize[1]:
+            if user['auto_school'] == 'нет':
+                database.education.update_one({'id': callback.from_user.id},
+                                              {'$set': {
+                                                  'auto_school': 'да'
+                                              }})
+            else:
+                database.users.update_one({'id': callback.from_user.id}, {
+                    '$set': {
+                        'cash': user['cash'] + 100_000,
+                        'exp': user['exp'] + 5_000
+                    }
+                })
+                await bot.send_message(
+                    callback.message.chat.id,
+                    f'{await username(callback)}, права у вас уже имеются, вы получите компенсацию!',
+                    parse_mode='HTML')
+
+    async def give_prize_in_big_case(self, callback: types.CallbackQuery,
+                                     prize):
+        user = database.users.find_one({'id': int(callback.from_user.id)})
+        case_price = 1_500_000
+        database.users.update_one(
+            {'id': callback.from_user.id},
+            {'$set': {
+                'cash': int(user['cash']) - case_price
+            }})
+        user = database.users.find_one({'id': int(callback.from_user.id)})
+        if 'cash' in prize[1]:
+            database.users.update_one(
+                {'id': callback.from_user.id},
+                {'$set': {
+                    'cash': int(user['cash']) + prize[0]
+                }})
+        elif 'exp' in prize[1]:
+            database.users.update_one(
+                {'id': callback.from_user.id},
+                {'$set': {
+                    'exp': int(user['exp']) + prize[0]
+                }})
+        elif 'car' in prize[1]:
+            car_info = database.cars.find_one({'name_car': prize[0]})
+            user_cars = database.users_cars.find({'id': callback.from_user.id})
+            if car_info['name_car'] in user_cars:
+                database.users.update_one(
+                    {'id': callback.from_user.id},
+                    {'$set': {
+                        'cash': user['cash'] + car_info['cost']
+                    }})
+                await bot.send_message(
+                    callback.message.chat.id,
+                    f'{await username(callback)}, данная модель уже есть в вашем гараже, вы получите компенсацию!',
+                    parse_mode='HTML')
+                return
+            else:
+                database.users_cars.insert_one({
+                    'id':
+                    callback.from_user.id,
+                    'car':
+                    prize[0],
+                    'active':
+                    False,
+                    'fuel_per_hour':
+                    car_info['fuel_per_hour'],
+                    'save_job_time':
+                    car_info['save_job_time'],
+                    'cost':
+                    car_info['cost'],
+                    'hp':
+                    car_info['hp']
                 })
         elif 'country' in prize[1]:
             if prize[0] == 'нет':
-                database.users.update_one({'id': callback.from_user.id}, {'$set': {'cash': user['cash'] + 3_000_000}})
-                await bot.send_message(callback.message.chat.id, f'{await username(callback)}, нет свободных стран, поэтому вам выдана компенсация!', parse_mode='HTML')
+                database.users.update_one(
+                    {'id': callback.from_user.id},
+                    {'$set': {
+                        'cash': user['cash'] + 3_000_000
+                    }})
+                await bot.send_message(
+                    callback.message.chat.id,
+                    f'{await username(callback)}, нет свободных стран, поэтому вам выдана компенсация!',
+                    parse_mode='HTML')
                 return
             else:
-                database.users.update_one({'id': callback.from_user.id}, {'$set': {'president_country': prize[0],
-                                                                                   'citizen_country': prize[0]}})
-                database.countries.update_one({'country': prize[0]}, {'$set': {'president': callback.from_user.id}})
+                database.users.update_one({'id': callback.from_user.id}, {
+                    '$set': {
+                        'president_country': prize[0],
+                        'citizen_country': prize[0]
+                    }
+                })
+                database.countries.update_one(
+                    {'country': prize[0]},
+                    {'$set': {
+                        'president': callback.from_user.id
+                    }})
+
 
 class Cases:
 
@@ -143,7 +233,10 @@ class Cases:
                     return [exp, 'exp']
 
     async def open_middle_case(self):
-        prizes = ['car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'license']
+        prizes = [
+            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
+            'exp', 'license'
+        ]
         prize = random.choice(prizes)
         match prize:
             case 'money':
@@ -177,16 +270,28 @@ class Cases:
                     return [car_name, 'car']
             case 'license':
                 return ['Права B категории', 'license']
-           #case 'class_in_school':
-           #    rand = random.randint(0, 10)
-           #    if rand == 1 or rand == 2:
-           #        class_in_school = random.randint(0, 11)
-           #        print(f"{username} выиграл переход на {class_in_school} класс школы ")
-           #    else:
-           #        print(f'{username} выиграл переход в следующий класс')
+        #case 'class_in_school':
+        #    rand = random.randint(0, 10)
+        #    if rand == 1 or rand == 2:
+        #        class_in_school = random.randint(0, 11)
+        #        print(f"{username} выиграл переход на {class_in_school} класс школы ")
+        #    else:
+        #        print(f'{username} выиграл переход в следующий класс')
 
-    async def open_big_case(self):
-        prizes = ['car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'country']
+    async def open_big_case(self, user_id: int) -> None:
+        user = database.users.find_one({'id': int(user_id)})
+        if user != None:
+            if str(user['president_country']) == 'нет':
+                prizes = [
+                            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
+                            'exp', 'country'
+                        ]
+            elif str(user['president_country']) != 'нет':
+                prizes = [
+                            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
+                            'exp', 'money'
+                        ]
+        print(prizes)
         prize = random.choice(prizes)
         match prize:
             case 'money':
@@ -248,12 +353,17 @@ async def little_case(callback: types.CallbackQuery):
     if user['cash'] >= case_price:
         prize = await case.open_little_case()
 
-        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил маленький кейс за 10 000 $', parse_mode='HTML')
+        await bot.send_message(
+            callback.message.chat.id,
+            f'{await username(callback)} купил маленький кейс за 10 000 $',
+            parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(3)
         if prize[1] == 'cash':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/little_money.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/little_money.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1270, 475),
@@ -261,13 +371,17 @@ async def little_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/little.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/little.png',
-                                                 filename='case_little'),
-                                 caption=f'{await username(callback)}, вы выиграли деньги!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/little.png',
+                                filename='case_little'),
+                caption=f'{await username(callback)}, вы выиграли деньги!',
+                parse_mode='HTML')
         if prize[1] == 'exp':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/little_exp.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/little_exp.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1270, 475),
@@ -275,14 +389,20 @@ async def little_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/little.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/little.png',
-                                                 filename='case_little'),
-                                 caption=f'{await username(callback)}, вы выиграли опыт!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/little.png',
+                                filename='case_little'),
+                caption=f'{await username(callback)}, вы выиграли опыт!',
+                parse_mode='HTML')
         # Начисление награды
         await db.give_prize_in_little_case(callback=callback, prize=prize)
     else:
-        await bot.send_message(callback.message.chat.id,f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+        await bot.send_message(
+            callback.message.chat.id,
+            f'{await username(callback)}, у вас недостаточно средств!',
+            parse_mode='HTML')
+
 
 async def middle_case(callback: types.CallbackQuery):
     db = Database()
@@ -292,12 +412,17 @@ async def middle_case(callback: types.CallbackQuery):
     if user['cash'] >= case_price:
         prize = await case.open_middle_case()
 
-        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил средний кейс за 500 000 $', parse_mode='HTML')
+        await bot.send_message(
+            callback.message.chat.id,
+            f'{await username(callback)} купил средний кейс за 500 000 $',
+            parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(3)
         if prize[1] == 'cash':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/middle_money.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/middle_money.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1270, 475),
@@ -305,13 +430,17 @@ async def middle_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/middle.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
-                                                 filename='case_middle'),
-                                 caption=f'{await username(callback)}, вы выиграли деньги!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
+                                filename='case_middle'),
+                caption=f'{await username(callback)}, вы выиграли деньги!',
+                parse_mode='HTML')
         if prize[1] == 'exp':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/middle_exp.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/middle_exp.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1270, 475),
@@ -319,14 +448,18 @@ async def middle_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/middle.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
-                                                 filename='case_middle'),
-                                 caption=f'{await username(callback)}, вы выиграли опыт!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
+                                filename='case_middle'),
+                caption=f'{await username(callback)}, вы выиграли опыт!',
+                parse_mode='HTML')
 
         if prize[1] == 'car':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/middle_car.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=50)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/middle_car.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=50)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1200, 485),
@@ -334,49 +467,71 @@ async def middle_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/middle.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
-                                                 filename='case_middle'),
-                                 caption=f'{await username(callback)}, вы выиграли автомобиль!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
+                                filename='case_middle'),
+                caption=f'{await username(callback)}, вы выиграли автомобиль!',
+                parse_mode='HTML')
         if prize[1] == 'license':
             # фото профиля
-            user_profile_photo = await bot.get_user_profile_photos(callback.from_user.id, limit=1)
+            user_profile_photo = await bot.get_user_profile_photos(
+                callback.from_user.id, limit=1)
             if user_profile_photo.photos:
-                file = await bot.get_file(user_profile_photo.photos[0][0].file_id)
-                await bot.download_file(file.file_path, f'{os.getcwd()}/res/case_pic/cache/profile.png')
-                img_profile = Image.open(f'{os.getcwd()}/res/case_pic/cache/profile.png').convert("RGBA")
-                img = Image.open(f'{os.getcwd()}/res/case_pic/middle_drive.png').convert("RGBA")
-                font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=68)
+                file = await bot.get_file(
+                    user_profile_photo.photos[0][0].file_id)
+                await bot.download_file(
+                    file.file_path,
+                    f'{os.getcwd()}/res/case_pic/cache/profile.png')
+                img_profile = Image.open(
+                    f'{os.getcwd()}/res/case_pic/cache/profile.png').convert(
+                        "RGBA")
+                img = Image.open(f'{os.getcwd()}/res/case_pic/middle_drive.png'
+                                 ).convert("RGBA")
+                font = ImageFont.truetype(
+                    f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=68)
                 draw_text = ImageDraw.Draw(img)
                 draw_text.text((1270, 475),
                                f'{prize[0]}',
                                font=font,
                                fill='#62ca29')
-                new_img_profile = img_profile.resize((170,184))
+                new_img_profile = img_profile.resize((170, 184))
                 img.paste(new_img_profile, (309, 350))
                 img.save(f'{os.getcwd()}/res/case_pic/cache/middle.png')
-                await bot.send_photo(callback.message.chat.id,
-                                     photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
-                                                     filename='case_middle'),
-                                     caption=f'{await username(callback)}, вы выиграли права!', parse_mode='HTML')
+                await bot.send_photo(
+                    callback.message.chat.id,
+                    photo=InputFile(
+                        f'{os.getcwd()}/res/case_pic/cache/middle.png',
+                        filename='case_middle'),
+                    caption=f'{await username(callback)}, вы выиграли права!',
+                    parse_mode='HTML')
             else:
-                img = Image.open(f'{os.getcwd()}/res/case_pic/middle_drive.png').convert("RGBA")
-                font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=68)
+                img = Image.open(f'{os.getcwd()}/res/case_pic/middle_drive.png'
+                                 ).convert("RGBA")
+                font = ImageFont.truetype(
+                    f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=68)
                 draw_text = ImageDraw.Draw(img)
                 draw_text.text((1270, 475),
                                f'{prize[0]}',
                                font=font,
                                fill='#62ca29')
                 img.save(f'{os.getcwd()}/res/case_pic/cache/middle.png')
-                await bot.send_photo(callback.message.chat.id,
-                                     photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/middle.png',
-                                                     filename='case_middle'),
-                                     caption=f'{await username(callback)}, вы выиграли права!', parse_mode='HTML')
+                await bot.send_photo(
+                    callback.message.chat.id,
+                    photo=InputFile(
+                        f'{os.getcwd()}/res/case_pic/cache/middle.png',
+                        filename='case_middle'),
+                    caption=f'{await username(callback)}, вы выиграли права!',
+                    parse_mode='HTML')
         # Начисление награды
         await db.give_prize_in_middle_case(callback=callback, prize=prize)
 
     else:
-        await bot.send_message(callback.message.chat.id,f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+        await bot.send_message(
+            callback.message.chat.id,
+            f'{await username(callback)}, у вас недостаточно средств!',
+            parse_mode='HTML')
+
 
 async def big_case(callback: types.CallbackQuery):
     db = Database()
@@ -384,14 +539,19 @@ async def big_case(callback: types.CallbackQuery):
     user = database.users.find_one({'id': int(callback.from_user.id)})
     case_price = 1_500_000
     if user['cash'] >= case_price:
-        prize = await case.open_big_case()
+        prize = await case.open_big_case(user_id=callback.from_user.id)
 
-        await bot.send_message(callback.message.chat.id, f'{await username(callback)} купил большой кейс за 1 500 000 $', parse_mode='HTML')
+        await bot.send_message(
+            callback.message.chat.id,
+            f'{await username(callback)} купил большой кейс за 1 500 000 $',
+            parse_mode='HTML')
         await bot.send_dice(callback.message.chat.id)
         await asyncio.sleep(3)
         if prize[1] == 'cash':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/big_money.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/big_money.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1270, 475),
@@ -399,13 +559,17 @@ async def big_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/big.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
-                                                 filename='case_big'),
-                                 caption=f'{await username(callback)}, вы выиграли деньги!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
+                                filename='case_big'),
+                caption=f'{await username(callback)}, вы выиграли деньги!',
+                parse_mode='HTML')
         if prize[1] == 'exp':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/big_exp.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/big_exp.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1270, 475),
@@ -413,14 +577,18 @@ async def big_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/big.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
-                                                 filename='case_big'),
-                                 caption=f'{await username(callback)}, вы выиграли опыт!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
+                                filename='case_big'),
+                caption=f'{await username(callback)}, вы выиграли опыт!',
+                parse_mode='HTML')
 
         if prize[1] == 'car':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/big_car.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=50)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/big_car.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=50)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1200, 485),
@@ -428,14 +596,18 @@ async def big_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/big.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
-                                                 filename='case_big'),
-                                 caption=f'{await username(callback)}, вы выиграли автомобиль!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
+                                filename='case_big'),
+                caption=f'{await username(callback)}, вы выиграли автомобиль!',
+                parse_mode='HTML')
 
         if prize[1] == 'country':
-            img = Image.open(f'{os.getcwd()}/res/case_pic/big_country.png').convert("RGBA")
-            font = ImageFont.truetype(f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
+            img = Image.open(
+                f'{os.getcwd()}/res/case_pic/big_country.png').convert("RGBA")
+            font = ImageFont.truetype(
+                f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
             # опыт
             draw_text.text((1270, 475),
@@ -443,12 +615,17 @@ async def big_case(callback: types.CallbackQuery):
                            font=font,
                            fill='#62ca29')
             img.save(f'{os.getcwd()}/res/case_pic/cache/big.png')
-            await bot.send_photo(callback.message.chat.id,
-                                 photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
-                                                 filename='case_big'),
-                                 caption=f'{await username(callback)}, вы выиграли страну!', parse_mode='HTML')
+            await bot.send_photo(
+                callback.message.chat.id,
+                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
+                                filename='case_big'),
+                caption=f'{await username(callback)}, вы выиграли страну!',
+                parse_mode='HTML')
 
         # Начисление награды
         await db.give_prize_in_big_case(callback=callback, prize=prize)
     else:
-        await bot.send_message(callback.message.chat.id,f'{await username(callback)}, у вас недостаточно средств!', parse_mode='HTML')
+        await bot.send_message(
+            callback.message.chat.id,
+            f'{await username(callback)}, у вас недостаточно средств!',
+            parse_mode='HTML')
