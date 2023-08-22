@@ -14,7 +14,7 @@ async def garage(message: types.Message):
         kb.row(activate_btn, next_page_btn)
         await message.answer(text=f'Модель автомобиля: {user_cars[0]["car"]}\n'
                                                   f'Расход топлива в час: {user_cars[0]["fuel_per_hour"]}\n'
-                                                  f'Сокращает время работы до: {user_cars[0]["save_job_time"]}\n'
+                                                  f'Сокращает время работы на: {user_cars[0]["save_job_time"]}%\n'
                                                   f'Страница 1/{len(user_cars)}', reply_markup=kb, parse_mode='HTML')
 
     else:
@@ -59,7 +59,7 @@ async def next_page_garage(callback: types.CallbackQuery):
             kb.row(previous_page_btn, activate_btn, next_page_btn)
             await callback.message.edit_text(text=f'Модель автомобиля: {user_cars[page]["car"]}\n'
                                                   f'Расход топлива в час: {user_cars[page]["fuel_per_hour"]}\n'
-                                                  f'Сокращает время работы до: {user_cars[page]["save_job_time"]}\n'
+                                                  f'Сокращает время работы на: {user_cars[page]["save_job_time"]}%\n'
                                                   f'Страница {page+1}/{len(user_cars)}', reply_markup=kb, parse_mode='HTML')
             await callback.answer()
         elif page+2 == len(user_cars):
@@ -71,7 +71,7 @@ async def next_page_garage(callback: types.CallbackQuery):
             kb.row(previous_page_btn, activate_btn)
             await callback.message.edit_text(text=f'Модель автомобиля: {user_cars[page]["car"]}\n'
                                                   f'Расход топлива в час: {user_cars[page]["fuel_per_hour"]}\n'
-                                                  f'Сокращает время работы до: {user_cars[page]["save_job_time"]}\n'
+                                                  f'Сокращает время работы на: {user_cars[page]["save_job_time"]}%\n'
                                                   f'Страница {page+1}/{len(user_cars)}', reply_markup=kb, parse_mode='HTML')
     else:
         await callback.answer('Это предназначено не вам')
@@ -94,7 +94,7 @@ async def previous_page_garage(callback: types.CallbackQuery):
             kb.row(previous_page_btn, activate_btn, next_page_btn)
             await callback.message.edit_text(text=f'Модель автомобиля: {user_cars[page+1]["car"]}\n'
                                                   f'Расход топлива в час: {user_cars[page+1]["fuel_per_hour"]}\n'
-                                                  f'Сокращает время работы до: {user_cars[page+1]["save_job_time"]}\n'
+                                                  f'Сокращает время работы на: {user_cars[page+1]["save_job_time"]}%\n'
                                                   f'Страница {page+2}/{len(user_cars)}', reply_markup=kb, parse_mode='HTML')
             await callback.answer()
         elif page==0:
