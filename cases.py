@@ -1,11 +1,11 @@
 import random
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import types
+
 
 import asyncio
 
-from bot import database, res_database, username, InputFile
-from create_bot import bot, dp, token
+from bot import database,  username, InputFile
+from create_bot import bot
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import os
 
@@ -28,7 +28,8 @@ class Database:
     def __init__(self):
         ...
 
-    async def give_prize_in_little_case(self, callback: types.CallbackQuery,
+    @staticmethod
+    async def give_prize_in_little_case(callback: types.CallbackQuery,
                                         prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 10_000
@@ -52,9 +53,11 @@ class Database:
                                           'exp': user_exp + prize[0]
                                       }})
 
-    async def give_prize_in_middle_case(self, callback: types.CallbackQuery,
+    @staticmethod
+    async def give_prize_in_middle_case(callback: types.CallbackQuery,
                                         prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
+        user_education = database.education.find_one({'id': callback.from_user.id})
         case_price = 500_000
         database.users.update_one(
             {'id': callback.from_user.id},
@@ -108,24 +111,37 @@ class Database:
                     car_info['hp']
                 })
         elif 'license' in prize[1]:
-            if user['auto_school'] == 'нет':
-                database.education.update_one({'id': callback.from_user.id},
+            if user_education['auto_school'] == 'нет' and user_education['status'] == 'окончил':
+                database.education.update_one({'id': int(callback.from_user.id)},
                                               {'$set': {
                                                   'auto_school': 'да'
                                               }})
             else:
-                database.users.update_one({'id': callback.from_user.id}, {
-                    '$set': {
-                        'cash': user['cash'] + 100_000,
-                        'exp': user['exp'] + 5_000
-                    }
-                })
-                await bot.send_message(
-                    callback.message.chat.id,
-                    f'{await username(callback)}, права у вас уже имеются, вы получите компенсацию!',
-                    parse_mode='HTML')
+                if user_education['auto_school'] == 'нет' and user_education['status'] == 'нет':
+                    database.users.update_one({'id': int(callback.from_user.id)}, {
+                        '$set': {
+                            'cash': user['cash'] + 100_000,
+                            'exp': user['exp'] + 5_000
+                        }
+                    })
+                    await bot.send_message(
+                        callback.message.chat.id,
+                        f'{await username(callback)}, вы еще не окончили обучение в школе, вы получите компенсацию в размере 100 000$ и 5 000exp!',
+                        parse_mode='HTML')
+                elif user_education['auto_school'] == 'да':
+                    database.users.update_one({'id': int(callback.from_user.id)}, {
+                        '$set': {
+                            'cash': user['cash'] + 100_000,
+                            'exp': user['exp'] + 5_000
+                        }
+                    })
+                    await bot.send_message(
+                        callback.message.chat.id,
+                        f'{await username(callback)}, у вас уже имеются права, вы получите компенсацию в размере 100 000$ и 5 000exp!',
+                        parse_mode='HTML')
 
-    async def give_prize_in_big_case(self, callback: types.CallbackQuery,
+    @staticmethod
+    async def give_prize_in_big_case(callback: types.CallbackQuery,
                                      prize):
         user = database.users.find_one({'id': int(callback.from_user.id)})
         case_price = 1_500_000
@@ -209,7 +225,8 @@ class Cases:
     def __init__(self):
         ...
 
-    async def open_little_case(self):
+    @staticmethod
+    async def open_little_case():
         prizes = ['money', 'exp']
         prize = random.choice(prizes)
 
@@ -232,10 +249,10 @@ class Cases:
                     exp = random.randint(50, 1000)
                     return [exp, 'exp']
 
-    async def open_middle_case(self):
+    @staticmethod
+    async def open_middle_case():
         prizes = [
-            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
-            'exp', 'license'
+            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'license'
         ]
         prize = random.choice(prizes)
         match prize:
@@ -251,10 +268,10 @@ class Cases:
             case 'exp':
                 rand = random.randint(0, 8)
                 if rand == 1:
-                    exp = random.randint(7000, 20000)
+                    exp = random.randint(7000, 15000)
                     return [exp, 'exp']
                 else:
-                    exp = random.randint(100, 7000)
+                    exp = random.randint(100, 6300)
                     return [exp, 'exp']
 
             case 'car':
@@ -278,9 +295,10 @@ class Cases:
         #    else:
         #        print(f'{username} выиграл переход в следующий класс')
 
-    async def open_big_case(self, user_id: int) -> None:
+    @staticmethod
+    async def open_big_case(user_id: int) -> None:
         user = database.users.find_one({'id': int(user_id)})
-        if user != None:
+        if user is not None:
             if str(user['president_country']) == 'нет':
                 prizes = [
                             'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
@@ -291,7 +309,6 @@ class Cases:
                             'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
                             'exp', 'money'
                         ]
-        print(prizes)
         prize = random.choice(prizes)
         match prize:
             case 'money':
@@ -327,22 +344,6 @@ class Cases:
                     return [country, 'country']
                 else:
                     return ['нет', 'country']
-
-            #case 'class_in_school':
-            #    rand = random.randint(0, 8)
-            #    if rand == 1 or rand == 2:
-            #        class_in_school = random.randint(0, 11)
-            #        print(f"{username} выиграл переход на {class_in_school} класс школы ")
-            #        return [class_in_school, 'class']
-            #    else:
-            #        print(f'{username} выиграл переход в следующий класс')
-            #        return ['+1', 'class']
-
-
-# ['ЕРАЗ 762', 'GEELY COOLRAY 2020', 'Agrale Marrua C87', 'McLaren 765LT', 'BMW M3 E36',
-# 'BMW M3 E46 GTR', 'BMW M4 Competition', 'BMW M5 Competition', 'Ferrari 296 GTB 2022',
-# 'KIA Soul 2022', 'BAIC Huansu S5', 'Spyker C12 Zagato', 'Lada Vesta', 'Dodge Challenger 2022 SRT',
-# 'Audi A6', 'Audi R8', 'Mercedes-Benz G63 AMG 2018', 'Mercedes-Benz AMG GT 63s', 'Nissan GTR R34', 'Nissan GTR R35']
 
 
 async def little_case(callback: types.CallbackQuery):

@@ -1634,7 +1634,7 @@ if __name__ == '__main__':
     krupye.register_handlers_krupye(dp)
     # job
     job.register_handlers_countries(dp)
-    # bussiness
+    # business
     bussiness.register_handlers_bussiness(dp)
     # shop
     inline_shop.register_handlers_shop(dp)
