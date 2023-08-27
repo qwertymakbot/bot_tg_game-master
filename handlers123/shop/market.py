@@ -107,6 +107,9 @@ async def start_sale_food(callback: types.CallbackQuery):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.quantity)
 async def market_sale_food(message: types.Message, state: FSMContext):
+    if int(message.text) <= 0:
+        await message.answer(f'{await username(message)}, введите корректное количество!', parse_mode='HTML')
+        return
     user_info = database.users.find_one({'id': message.from_user.id})
     user_food = int(user_info['food'])
     try:
@@ -126,6 +129,9 @@ async def market_sale_food(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.price)
 async def market_sale_food_price(message: types.Message, state: FSMContext):
+    if int(message.text) <= 0:
+        await message.answer(f'{await username(message)}, введите корректную цену!', parse_mode='HTML')
+        return
     try:
         async with state.proxy() as data:
             data['price'] = int(message.text)
@@ -153,6 +159,9 @@ async def start_sale_oil(callback: types.CallbackQuery):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.quantity)
 async def market_sale_oil(message: types.Message, state: FSMContext):
+    if int(message.text) <= 0:
+        await message.answer(f'{await username(message)}, введите корректное количество!', parse_mode='HTML')
+        return
     user_info = database.users.find_one({'id': message.from_user.id})
     user_oil = int(user_info['oil'])
     try:
@@ -171,6 +180,9 @@ async def market_sale_oil(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.price)
 async def market_sale_oil_price(message: types.Message, state: FSMContext):
+    if int(message.text) <= 0:
+        await message.answer(f'{await username(message)}, введите корректную цену!', parse_mode='HTML')
+        return
     try:
         async with state.proxy() as data:
             data['price'] = int(message.text)

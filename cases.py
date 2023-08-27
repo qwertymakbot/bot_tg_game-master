@@ -315,10 +315,10 @@ class Cases:
                 rand = random.randint(0, 8)
                 if rand == 1:
                     money = random.randint(2_000_000, 10_000_000)
-                    return [money, '$']
+                    return [money, 'cash']
                 else:
                     money = random.randint(650_000, 2_000_000)
-                    return [money, '$']
+                    return [money, 'cash']
 
             case 'exp':
                 rand = random.randint(0, 8)
@@ -338,10 +338,10 @@ class Cases:
                     car_name = random.choice(gcar)
                     return [car_name, 'car']
             case 'country':
-                country_list = list(database.country.find({'president': 0}))
+                country_list = list(database.countries.find({'president': 0}))
                 if country_list:
                     country = random.choice(country_list)
-                    return [country, 'country']
+                    return [country['country'], 'country']
                 else:
                     return ['нет', 'country']
 

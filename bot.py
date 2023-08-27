@@ -245,8 +245,8 @@ async def on_startup(_):
 
 # Проверка больше ли еды в стране
 async def check_food_country(user_id):
-    country_info = database.countries.find_one({'president'})
-    president_info = database.users.find_one({'president'})
+    country_info = database.countries.find_one({'president': user_id})
+    president_info = database.users.find_one({'president': user_id})
     if country_info['food'] < 50:
         database.users.update_one({'id': country_info['president']}, {'$set': {'president_country': 'нет'}})
         users_info = database.users.find({'citizen_country': country_info['country']})
@@ -1080,7 +1080,7 @@ async def n1(message):
 
 @dp.message_handler(IsQuestions())
 async def text(message):
-    token_openai = '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'
+    token_openai = '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'
     chats = [-1001920241477]
     if message.reply_to_message and message.reply_to_message['from'][
         'is_bot'] and message.chat.id in chats or 'бот' in message.text.split() and message.chat.id in chats or 'Бот' in message.text.split() and message.chat.id in chats:

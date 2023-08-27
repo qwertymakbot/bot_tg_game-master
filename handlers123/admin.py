@@ -63,6 +63,9 @@ async def admins(message: types.Message):
 # Младший админ
 @dp.message_handler(content_types='text', text='!админ')
 async def ml_admin(message: types.Message):
+    if message.from_user.id == message.reply_to_message.from_user.id:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!', parse_mode='HTML')
+        return
     is_creator = await creator_check(message)
     if database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]}) is None:
         await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
@@ -118,6 +121,9 @@ async def ml_admin(message: types.Message):
 # Старший админ
 @dp.message_handler(content_types='text', text='!!админ')
 async def st_admin(message: types.Message):
+    if message.from_user.id == message.reply_to_message.from_user.id:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!', parse_mode='HTML')
+        return
     is_creator = await creator_check(message)
     if database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]}) is None:
         await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
@@ -164,6 +170,9 @@ async def st_admin(message: types.Message):
 # Разжаловать
 @dp.message_handler(content_types='text', text=['Разжаловать', 'разжаловать'])
 async def razjalov(message: types.Message):
+    if message.from_user.id == message.reply_to_message.from_user.id:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!', parse_mode='HTML')
+        return
     is_creator = await creator_check(message)
     if database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]}) is None:
         await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
@@ -231,6 +240,9 @@ async def razjalov(message: types.Message):
 # Выдать мут
 @dp.message_handler(commands='мут', commands_prefix='!')
 async def mute(message: types.Message):
+    if message.from_user.id == message.reply_to_message.from_user.id:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!', parse_mode='HTML')
+        return
     try:
         date, reason = str(message.text).replace('!мут ', '').split('\n')
         is_creator = await creator_check(message)
@@ -337,6 +349,9 @@ async def mute(message: types.Message):
 @dp.message_handler(commands=['анмут', 'размутить'], commands_prefix='!')
 async def unmute(message: types.Message):
     is_creator = await creator_check(message)
+    if message.from_user.id == message.reply_to_message.from_user.id:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!', parse_mode='HTML')
+        return
     if database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]}) is None:
         await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
                                parse_mode='HTML')
@@ -398,62 +413,65 @@ async def unmute(message: types.Message):
 # Выдать бан
 @dp.message_handler(commands=['бан'], commands_prefix='!')
 async def ban(message: types.Message):
-        print(123)
-        reason = str(message.text).replace('!бан ', '')
-        if '!бан' in reason:
-            await bot.send_message(message.chat.id, f'{await username(message)}, укажите причину бана!',
-                                   parse_mode='HTML')
-            return
-        is_creator = await creator_check(message)
-        if database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]}) is None:
-            await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
-                                   parse_mode='HTML')
-            return
-        is_st_admin = \
-        database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})[
-            'st_admin']
-        is_ml_admin = \
-        database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})[
-            'ml_admin']
-        if is_creator or is_st_admin or is_ml_admin:
-            if message.reply_to_message:
-                is_st_admin = \
-                    database_adm.admins.find_one(
-                        {'$and': [{'id': message.reply_to_message.from_user.id}, {'chat_id': message.chat.id}]})
-                is_ml_admin = \
-                    database_adm.admins.find_one(
-                        {'$and': [{'id': message.reply_to_message.from_user.id}, {'chat_id': message.chat.id}]})
-                is_creator_reply = \
-                    database_adm.admins.find_one(
-                        {'$and': [{'id': message.reply_to_message.from_user.id}, {'chat_id': message.chat.id}]})
-                # Если нету пользователя в админах то мут
-                if is_st_admin is None:
-                    await bot.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
-                    await bot.send_message(message.chat.id,
-                                           f'{await username(message)}, выдал бан {await username(message.reply_to_message)} на ♾ по причине {reason}',
-                                           parse_mode='HTML')
-                    await log(message, message.reply_to_message.from_user.id, 'бан', '♾', reason)
-                # Если создатель - выдает мут любому
-                elif is_creator:
-                    await bot.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
-                    await bot.send_message(message.chat.id,
-                                           f'{await username(message)}, выдал бан {await username(message.reply_to_message)} на ♾ по причине {reason}',
-                                           parse_mode='HTML')
-                    await log(message, message.reply_to_message.from_user.id, 'бан', '♾', reason)
-                # Если мут кого то из админов
-                elif is_creator_reply['creator'] or is_st_admin['st_admin'] or is_ml_admin['ml_admin']:
-                    await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
-                                           parse_mode='HTML')
-                    # Выдача бывшим админам мута
-                else:
-                    print(message.get_args())
-            else:
+    if message.from_user.id == message.reply_to_message.from_user.id:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
+                               parse_mode='HTML')
+        return
+    reason = str(message.text).replace('!бан ', '')
+    if '!бан' in reason:
+        await bot.send_message(message.chat.id, f'{await username(message)}, укажите причину бана!',
+                               parse_mode='HTML')
+        return
+    is_creator = await creator_check(message)
+    if database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]}) is None:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
+                               parse_mode='HTML')
+        return
+    is_st_admin = \
+    database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})[
+        'st_admin']
+    is_ml_admin = \
+    database_adm.admins.find_one({'$and': [{'id': message.from_user.id}, {'chat_id': message.chat.id}]})[
+        'ml_admin']
+    if is_creator or is_st_admin or is_ml_admin:
+        if message.reply_to_message:
+            is_st_admin = \
+                database_adm.admins.find_one(
+                    {'$and': [{'id': message.reply_to_message.from_user.id}, {'chat_id': message.chat.id}]})
+            is_ml_admin = \
+                database_adm.admins.find_one(
+                    {'$and': [{'id': message.reply_to_message.from_user.id}, {'chat_id': message.chat.id}]})
+            is_creator_reply = \
+                database_adm.admins.find_one(
+                    {'$and': [{'id': message.reply_to_message.from_user.id}, {'chat_id': message.chat.id}]})
+            # Если нету пользователя в админах то мут
+            if is_st_admin is None:
+                await bot.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
                 await bot.send_message(message.chat.id,
-                                       f'{await username(message)}, вам нужно ответить данной командой на сообщение пользователя!',
+                                       f'{await username(message)}, выдал бан {await username(message.reply_to_message)} на ♾ по причине {reason}',
                                        parse_mode='HTML')
+                await log(message, message.reply_to_message.from_user.id, 'бан', '♾', reason)
+            # Если создатель - выдает мут любому
+            elif is_creator:
+                await bot.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
+                await bot.send_message(message.chat.id,
+                                       f'{await username(message)}, выдал бан {await username(message.reply_to_message)} на ♾ по причине {reason}',
+                                       parse_mode='HTML')
+                await log(message, message.reply_to_message.from_user.id, 'бан', '♾', reason)
+            # Если мут кого то из админов
+            elif is_creator_reply['creator'] or is_st_admin['st_admin'] or is_ml_admin['ml_admin']:
+                await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
+                                       parse_mode='HTML')
+                # Выдача бывшим админам мута
+            else:
+                print(message.get_args())
         else:
-            await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
+            await bot.send_message(message.chat.id,
+                                   f'{await username(message)}, вам нужно ответить данной командой на сообщение пользователя!',
                                    parse_mode='HTML')
+    else:
+        await bot.send_message(message.chat.id, f'{await username(message)}, у вас недостаточно прав!',
+                               parse_mode='HTML')
 
 # Проверка создатель или нет
 async def creator_check(message: types.Message):
