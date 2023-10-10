@@ -199,7 +199,7 @@ async def bus_auto(callback: types.CallbackQuery):
     user_info = database.users.find_one({'id': callback.from_user.id})
     bus_data = list(database.businesses.find({'country': user_info['citizen_country']}))
     if not bus_data:
-        await bot.send_message(callback.message.chat.id, f'{await username(callback)}, в вашей стране нет бизнеса!')
+        await bot.send_message(callback.message.chat.id, f'{await username(callback)}, в вашей стране нет бизнеса!', parse_mode='HTML')
         return
     await bot.send_message(callback.message.chat.id, f'Страна производства: {bus_data[0]["country"]}\n'
                                                      f'Что производит: {bus_data[0]["product"]}\n'
