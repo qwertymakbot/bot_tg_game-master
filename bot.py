@@ -27,9 +27,9 @@ from create_bot import dp
 from filters import antiflood
 from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDice, IsDarts, IsBowling, \
     IsSlot, ShareMoney
-
+from freeGPT import AsyncClient
 # from background import keep_alive
-
+import re
 
 t = Translator()
 
@@ -72,10 +72,11 @@ logging.basicConfig(level=logging.INFO)
 # Вызывается при старте
 async def on_startup(_):
 
+
     # проверка активности президентов
     tz = pytz.timezone('Etc/GMT-3')
     scheduler.add_job(check_president, "cron",
-                      day_of_week='mon', timezone=tz)
+                      hour=6, timezone=tz)
     # бэкап в 8 утра
     scheduler.add_job(backup, "cron",
                       hour=8, timezone=tz)
@@ -213,7 +214,7 @@ async def on_startup(_):
                             datetime.now(tz=tz).day, datetime.now(tz=tz).hour,
                             datetime.now(tz=tz).minute, datetime.now(tz=tz).second)
         result = time_vuz - time_now
-        # Если уже окончил
+        # Если вышло время
         if '-' in str(result):
             await check_food_country(check_food['id'])
         else:
@@ -240,43 +241,63 @@ async def on_startup(_):
             scheduler.add_job(end_autoschool, "date",
                               run_date=autoschool_info['time'],
                               args=(autoschool_info['id'],), timezone=tz)
+
+    # Проверка есть ли все страны в БД
+    countries_db = database.countries.find()
+    list_countries = []
+    for i in countries_db:
+        list_countries.append(i['country'])
+    countries_res = res_database.countries.find()
+    for country in countries_res:
+        if country['country'] not in list_countries:
+            database.countries.insert_one({
+                'country': country['country'],
+                'president': 0,
+                'cash': int(country['cash']),
+                'oil': int(country['oil']),
+                'food': int(country['food']),
+                'territory': int(country['territory']),
+                'level': 0,
+                'max_people': int(country['max_people']),
+                'terr_for_farmers': int(country['terr_for_farmers']),
+                'cost': int(country['cost']),
+                'nalog_job': 1
+            })
     print('БОТ ЕБАШИТ')
 
 
 # Проверка больше ли еды в стране
 async def check_food_country(user_id):
     country_info = database.countries.find_one({'president': user_id})
+    # Если нет страны у президента
+    if country_info is None:
+        res_database.country_check_food.delete_one({'id': user_id})
+        return
     president_info = database.users.find_one({'president': user_id})
     if country_info['food'] < 50:
         database.users.update_one({'id': country_info['president']}, {'$set': {'president_country': 'нет'}})
         users_info = database.users.find({'citizen_country': country_info['country']})
         for user in users_info:
             database.users.update_one({'id': user['id']}, {'$set': {'citizen_country': 'нет'}})
-        with open(f'{os.getcwd()}/res/countries.txt', 'r', encoding='utf-8') as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                else:
-                    countries_settings = line.replace('\n', '').split('.')
-                    if countries_settings[0] == country_info['country']:
-                        database.countries.update_one({'country': country_info['country']}, {'$set': {
-                            'president': 0,
-                            'cash': int(countries_settings[1]),
-                            'oil': int(countries_settings[2]),
-                            'food': int(countries_settings[3]),
-                            'territory': int(countries_settings[4]),
-                            'level': 0,
-                            'max_people': int(countries_settings[5]),
-                            'terr_for_farmers': int(countries_settings[6]),
-                            'cost': int(countries_settings[7]),
-                            'nalog_job': 1
-                        }})
-                        break
+        country = res_database.countries.find_one({'country': president_info['president_country']})
+        database.countries.update_one({'country': country['country']}, {'$set': {
+            'president': 0,
+            'cash': int(country['cash']),
+            'oil': int(country['oil']),
+            'food': int(country['food']),
+            'territory': int(country['territory']),
+            'level': 0,
+            'max_people': int(country['max_people']),
+            'terr_for_farmers': int(country['terr_for_farmers']),
+            'cost': int(country['cost']),
+            'nalog_job': 1
+        }})
         res_database.country_check_food.delete_one({'id': user_id})
         await bot.send_message(country_info['president'],
                                f'{username_2(country_info["president"], president_info["firstname"])}, вы не восстановили еду, поэтому ваша страна {country_info["country"]} была расформирована и возврату не подлежит!',
                                parse_mode='HTML')
+    else:
+        res_database.country_check_food.delete_one({'id': user_id})
 
 # Проверка автошколы
 async def end_autoschool(user_id):
@@ -652,7 +673,7 @@ async def text(message, state: FSMContext):
 
 @dp.message_handler(content_types='text', text=['Ивент', 'ивент', 'Событие', 'событие'])
 async def evets(message: types.Message):
-    await message.reply(f'Проходит событие на 2 БП (один БП для евро, второй для ру, примерно 16$ общий выигрыш) \n'
+    await message.reply(f'Проходит событие на 1 БП (РУ регион) \n'
                         f'Чтобы быть участником события вам необходимо:\n'
                         f'1. Быть подписанным на @makbotinfo\n'
                         f'2. Состоять в чате @wotblitz_tt\n\n'
@@ -660,7 +681,7 @@ async def evets(message: types.Message):
                         f'Тикеты можно купить за 1кк по команде /ticket\n'
                         f'Тикет даётся за каждого приведенного друга по вашей ссылке /refer\n'
                         f'Чтобы просмотреть кол-во ваших тикетов /myticket\n\n'
-                        f'Конец события: 26.08 в 20.00')
+                        f'Конец события: 15.10 в 20.00')
 
 @dp.message_handler(commands='myticket')
 async def myticket(message: types.Message):
@@ -961,17 +982,6 @@ async def me(message):
     img.save(f'{os.getcwd()}/res/me_pic/res.png')
     await bot.send_photo(message.chat.id, photo=InputFile(f'{os.getcwd()}/res/me_pic/res.png'))
 
-    """await bot.send_message(message.chat.id,
-                           text=f'🪪 <b>Паспорт</b> {await username(message)}\n'
-                                f'💵 Деньги: {user_info["cash"]}$\n'
-                                f'🏵 Опыт: {user_info["exp"]}\n'
-                                f'👨‍⚖️Президент: {user_info["president_country"]}\n'
-                                f'👨 Гражданин: {user_info["citizen_country"]}\n'
-                                f'🛠 Работа: {user_info["job"]}\n'
-                                f'🖤 Нефти: {user_info["oil"]}л\n'
-                                f'🍔 Еды: {user_info["food"]}кг',
-                           disable_web_page_preview=True,
-                           parse_mode='HTML')"""
 
 
 # /countries Страны
@@ -1077,35 +1087,15 @@ async def n1(message):
     await message.reply(f'Мой ID: {message.from_user.id}\n'
                         f'ID чата: {message.chat.id}')
 
-
 @dp.message_handler(IsQuestions())
-async def text(message):
-    token_openai = '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'
-    chats = [-1001920241477]
-    if message.reply_to_message and message.reply_to_message['from'][
-        'is_bot'] and message.chat.id in chats or 'бот' in message.text.split() and message.chat.id in chats or 'Бот' in message.text.split() and message.chat.id in chats:
-
-        msg = await bot.send_message(message.chat.id, f'{message.from_user.first_name}, ваш ответ обрабатывается!',
-                                     reply_to_message_id=message.message_id)
-
-        response = await openai_async.complete(
-            token_openai,
-            timeout=30,
-            payload={
-                "model": "text-davinci-003",
-                "prompt": f"{message.text.capitalize().replace('Бот', '')}",
-                "max_tokens": 500,
-                "temperature": 0,
-                "top_p": 1,
-                "n": 1
-
-            },
-        )
-        await bot.edit_message_text(response.json()["choices"][0]["text"].strip(), message.chat.id, msg.message_id)
-    elif message.reply_to_message and message.reply_to_message['from'][
-        'is_bot'] and message.chat.id not in chats or 'бот' in message.text.split() and message.chat.id not in chats or 'Бот' in message.text.split() and message.chat.id not in chats:
-        await message.answer(
-            'ИИ бота доступен только в его игровом чате @makbot_game')
+async def text(message: types.Message):
+    prompt = message.text
+    if not prompt:
+        await message.answer('Вы задали пустой запрос.')
+    else:
+        msg = await message.reply('Ищу ответ на ваш вопрос!')
+        resp = await AsyncClient.create_completion("gpt4", prompt.replace('Бот', '').replace('бот', ''))
+        await bot.edit_message_text(resp.encode('utf-8').decode('unicode-escape'), chat_id=message.chat.id, message_id=msg.message_id)
 
 
 @dp.message_handler(IsPromo())
@@ -1145,225 +1135,6 @@ async def text(message):
                                            parse_mode='HTML')
 
 
-# Выигрыш
-async def win(message, rate_money, amount_money, koff, user_id):
-    win_money = int(rate_money * koff)
-    end_amount_money = win_money + int(amount_money)
-    database.users.update_one({'id': user_id}, {'$set': {'cash': int(end_amount_money)}})
-    await asyncio.sleep(4)
-    await bot.send_message(message.chat.id, f'{await username(message)}, ваш выигрыш ===> +' + str(
-        f'{win_money:n}$'.replace(',', ' ')), parse_mode='HTML')
-
-
-# Проигрыш
-async def lose(message, amount_money, rate_money, user_id):
-    end_amount_money = int(amount_money) - rate_money
-    database.users.update_one({'id': user_id}, {'$set': {'cash': int(end_amount_money)}})
-    await asyncio.sleep(4)
-    await bot.send_message(message.chat.id, f'{await username(message)}, проигрыш ===> -' + str(
-        f'{rate_money:n}$'.replace(',', ' ')), parse_mode='HTML')
-
-
-# Выигрыш слот
-async def win_slot(message, rate_money, amount_money, koff, user_id):
-    win_money = int(rate_money * koff)
-    end_amount_money = win_money + int(amount_money)
-    database.users.update_one({'id': user_id}, {'$set': {'cash': int(end_amount_money)}})
-    await asyncio.sleep(2)
-    await bot.send_message(message.chat.id, f'{await username(message)}, ваш выигрыш ===> +' + str(
-        f'{win_money:n}$'.replace(',', ' ')), parse_mode='HTML')
-
-
-# Проигрыш слот
-async def lose_slot(message, amount_money, rate_money, user_id):
-    end_amount_money = int(amount_money) - rate_money
-    database.users.update_one({'id': user_id}, {'$set': {'cash': int(end_amount_money)}})
-    await asyncio.sleep(2)
-    await bot.send_message(message.chat.id, f'{await username(message)}, проигрыш ===> -' + str(
-        f'{rate_money:n}$'.replace(',', ' ')), parse_mode='HTML')
-
-
-# Футбол
-@dp.message_handler(IsFootbal())
-async def get_game_data(message):
-    user_id = message.from_user.id
-    await check_user(message)
-
-    text = message.text.capitalize().split()
-    value = text[1].split('к')
-    money_num = value.pop(0)  # Количество денег (цифры перд К)
-    amount_k = len(value)  # Количество К (1к == 1000)
-    rate_money = int(money_num) * 1000 ** amount_k  # Ставка
-    user_info = database.users.find_one({'id': user_id})
-    amount_money = user_info['cash']
-    if rate_money <= amount_money:
-        amount_score = await bot.send_dice(message.chat.id, emoji='⚽')
-        if amount_score.dice.value == 3:
-            await win(message, rate_money, amount_money, 0.25, user_id)
-        elif amount_score.dice.value == 4:
-            await win(message, rate_money, amount_money, 0.25, user_id)
-        elif amount_score.dice.value == 5:
-            await win(message, rate_money, amount_money, 0.45, user_id)
-        else:
-            await lose(message, amount_money, rate_money, user_id)
-    else:
-        enough_money = rate_money - int(amount_money)
-        await bot.send_message(message.chat.id,
-                               f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n' + 'Ваш баланс: ' + f'{amount_money:n}$',
-                               parse_mode='HTML')
-
-
-# Баскетбол
-@dp.message_handler(IsBasketball())
-async def get_game_data(message):
-    user_id = message.from_user.id
-    await check_user(message)
-
-    text = message.text.capitalize().split()
-    value = text[1].split('к')
-    money_num = value.pop(0)  # Количество денег (цифры перд К)
-    amount_k = len(value)  # Количество К (1к == 1000)
-    rate_money = int(money_num) * 1000 ** amount_k  # Ставка
-    user_info = database.users.find_one({'id': user_id})
-    amount_money = user_info['cash']
-    if rate_money <= amount_money:
-        amount_score = await bot.send_dice(message.chat.id, emoji='🏀')
-        if amount_score.dice.value == 4:
-            await win(message, rate_money, amount_money, 0.5, user_id)
-        elif amount_score.dice.value == 5:
-            await win(message, rate_money, amount_money, 1, user_id)
-        else:
-            await lose(message, amount_money, rate_money, user_id)
-    else:
-        enough_money = rate_money - int(amount_money)
-        await bot.send_message(message.chat.id,
-                               f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n'.replace(',',
-                                                                                                               ' ') + 'Ваш баланс: ' + f'{amount_money:n}$'.replace(
-                                   ',', ' '), parse_mode='HTML')
-
-
-# Кости
-@dp.message_handler(IsDice())
-async def dice(message):
-    user_id = message.from_user.id
-    await check_user(message)
-
-    text = message.text.capitalize().split()
-    value = text[1].split('к')
-    money_num = value.pop(0)  # Количество денег (цифры перд К)
-    amount_k = len(value)  # Количество К (1к == 1000)
-    rate_money = int(money_num) * 1000 ** amount_k  # Ставка
-    amount_point = text[2]  # Количество точек
-    user_info = database.users.find_one({'id': user_id})
-    amount_money = user_info['cash']
-    if rate_money <= int(amount_money):
-        amount_score = await bot.send_dice(message.chat.id, emoji='🎲')
-        if int(amount_point) == int(amount_score.dice.value):
-            await win(message, rate_money, amount_money, 2, user_id)
-        elif abs(int(amount_point) - amount_score.dice.value) == 1:
-            await win(message, rate_money, amount_money, 0.5, user_id)
-        else:
-            await lose(message, amount_money, rate_money, user_id)
-    else:
-        enough_money = rate_money - int(amount_money)
-        await bot.send_message(message.chat.id,
-                               f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n'.replace(',',
-                                                                                                               ' ') + 'Ваш баланс: ' + f'{amount_money:n}$'.replace(
-                                   ',', ' '), parse_mode='HTML')
-
-
-# Дартс
-@dp.message_handler(IsDarts())
-async def darts(message):
-    user_id = message.from_user.id
-    await check_user(message)
-
-    text = message.text.capitalize().split()
-    value = text[1].split('к')
-    money_num = value.pop(0)  # Количество денег (цифры перд К)
-    amount_k = len(value)  # Количество К (1к == 1000)
-    rate_money = int(money_num) * 1000 ** amount_k  # Ставка
-    user_info = database.users.find_one({'id': user_id})
-    amount_money = user_info['cash']
-    if rate_money <= amount_money:
-        amount_score = await bot.send_dice(message.chat.id, emoji='🎯')
-        if amount_score.dice.value == 6:
-            await win(message, rate_money, amount_money, 2, user_id)
-        elif amount_score.dice.value == 5:
-            await win(message, rate_money, amount_money, 1, user_id)
-        elif amount_score.dice.value == 4:
-            await win(message, rate_money, amount_money, 0.5, user_id)
-        else:
-            await lose(message, amount_money, rate_money, user_id)
-    else:
-        enough_money = rate_money - int(amount_money)
-        await bot.send_message(message.chat.id,
-                               f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n'.replace(',',
-                                                                                                               ' ') + 'Ваш баланс: ' + f'{amount_money:n}$'.replace(
-                                   ',', ' '), parse_mode='HTML')
-
-
-# Боулинг
-@dp.message_handler(IsBowling())
-async def bowling(message):
-    user_id = message.from_user.id
-    await check_user(message)
-
-    text = message.text.capitalize().split()
-    value = text[1].split('к')
-    money_num = value.pop(0)  # Количество денег (цифры перд К)
-    amount_k = len(value)  # Количество К (1к == 1000)
-    rate_money = int(money_num) * 1000 ** amount_k  # Ставка
-    user_info = database.users.find_one({'id': user_id})
-    amount_money = user_info['cash']
-    if rate_money <= amount_money:
-        amount_score = await bot.send_dice(message.chat.id, emoji='🎳')
-        if amount_score.dice.value == 6:
-            await win(message, rate_money, amount_money, 2, user_id)
-        elif amount_score.dice.value == 5:
-            await win(message, rate_money, amount_money, 1, user_id)
-        elif amount_score.dice.value == 4:
-            await win(message, rate_money, amount_money, 0.5, user_id)
-        else:
-            await lose(message, amount_money, rate_money, user_id)
-    else:
-        enough_money = rate_money - int(amount_money)
-        await bot.send_message(message.chat.id,
-                               f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n'.replace(',',
-                                                                                                               ' ') + 'Ваш баланс: ' + f'{amount_money:n}$'.replace(
-                                   ',', ' '), parse_mode='HTML')
-
-
-# Слот
-@dp.message_handler(IsSlot())
-async def slot(message):
-    user_id = message.from_user.id
-    await check_user(message)
-
-    text = message.text.capitalize().split()
-    value = text[1].split('к')
-    money_num = value.pop(0)  # Количество денег (цифры перд К)
-    amount_k = len(value)  # Количество К (1к == 1000)
-    rate_money = int(money_num) * 1000 ** amount_k  # Ставка
-    user_info = database.users.find_one({'id': user_id})
-    amount_money = user_info['cash']
-    if rate_money <= amount_money:
-        amount_score = await bot.send_dice(message.chat.id, emoji='🎰')
-
-        if amount_score.dice.value == 64:
-            await win_slot(message, rate_money, amount_money, 12, user_id)
-        elif amount_score.dice.value in (1, 22, 43):
-            await win_slot(message, rate_money, amount_money, 5, user_id)
-        elif amount_score.dice.value in (16, 32, 48):
-            await win_slot(message, rate_money, amount_money, 3, user_id)
-        else:
-            await lose_slot(message, amount_money, rate_money, user_id)
-    else:
-        enough_money = rate_money - amount_money
-        await bot.send_message(message.chat.id,
-                               f'{await username(message)}, вам не хватает: ' + f'{enough_money:n}$\n'.replace(',',
-                                                                                                               ' ') + 'Ваш баланс: ' + f'{amount_money:n}$'.replace(
-                                   ',', ' '), parse_mode='HTML')
 
 
 # ТОп чата
@@ -1382,7 +1153,7 @@ async def top(message):
 
 
 # Мой топ
-@dp.message_handler(content_types='text', text=['Топ', 'топ'])
+@dp.message_handler(content_types='text', text=['Топ', 'топ','Мой топ', 'мой топ'])
 async def top(message):
     await check_user(message)
     users_info = database.users.find().sort('exp', -1)
@@ -1412,21 +1183,6 @@ async def tagg(message: types.Message):
     id = int(message.get_args())
     await message.reply(await username_2(id, 'пользователь'), parse_mode='HTML')
 
-
-"""@dp.callback_query_handler(lambda callback: 'vuz_' in callback.data)
-async def vuz(callback: types.CallbackQuery):
-    name_job = callback.data.replace('vuz_', '')
-    job_info = database.jobs.find_one({'name_job': name_job})
-    await callback.message.edit_text(
-        f'{await username(callback)}, для обучения в ВУЗе "{name_job}" вам понадобится:\n'
-        f'    - {job_info["need_exp"]} опыта\n'
-        f'    - {job_info["need_cash"]}$\n'
-        f'    - Обучение длится 24 часа\n\n'
-        f'❗️ По окончании обучения вы получите возможность работать по профессии {name_job}',
-        reply_markup=InlineKeyboardMarkup(1).add(
-            InlineKeyboardButton('Начать обучение',
-                                 callback_data=f'start_vu_{name_job}'),
-            InlineKeyboardButton('Отмена', callback_data='otmena')), parse_mode='HTML')"""
 
 
 # Тегает
@@ -1493,29 +1249,21 @@ async def check_president():
             users_info = database.users.find({'citizen_country': country['country']})
             for user in users_info:
                 database.users.update_one({'id': user['id']}, {'$set': {'citizen_country': 'нет'}})
-            with open(f'{os.getcwd()}/res/countries.txt', 'r', encoding='utf-8') as f:
-                while True:
-                    line = f.readline()
-                    if not line:
-                        break
-                    else:
-                        countries_settings = line.replace('\n', '').split('.')
-                        if countries_settings[0] == country['country']:
-                            database.countries.update_one({'country': country['country']}, {'$set': {
-                                'president': 0,
-                                'cash': int(countries_settings[1]),
-                                'oil': int(countries_settings[2]),
-                                'food': int(countries_settings[3]),
-                                'territory': int(countries_settings[4]),
-                                'level': 0,
-                                'max_people': int(countries_settings[5]),
-                                'terr_for_farmers': int(countries_settings[6]),
-                                'cost': int(countries_settings[7]),
-                                'nalog_job': 1
-                            }})
-                            break
+            country = res_database.countries.find_one({'country': president_info['president_country']})
+            database.countries.update_one({'country': country['country']}, {'$set': {
+                'president': 0,
+                'cash': int(country['cash']),
+                'oil': int(country['oil']),
+                'food': int(country['food']),
+                'territory': int(country['territory']),
+                'level': 0,
+                'max_people': int(country['max_people']),
+                'terr_for_farmers': int(country['terr_for_farmers']),
+                'cost': int(country['cost']),
+                'nalog_job': 1
+            }})
             await bot.send_message(country['president'],
-                                   f'{username_2(country["president"], president_info["firstname"])}, вы были неактивны {int(str(result).split(" ")[0])} дней, поэтому ваша страна {country["country"]} была расформирована и возврату не подлежит!',
+                                   f'{await username_2(country["president"], president_info["firstname"])}, вы были неактивны {int(str(result).split(" ")[0])} дней, поэтому ваша страна {country["country"]} была расформирована и возврату не подлежит!',
                                    parse_mode='HTML')
 
 
@@ -1617,6 +1365,7 @@ async def backup():
 scheduler = AsyncIOScheduler()
 scheduler.start()
 if __name__ == '__main__':
+
     #    keep_alive()
     logging.basicConfig(level=logging.INFO)
     # Регистрация хендлеров

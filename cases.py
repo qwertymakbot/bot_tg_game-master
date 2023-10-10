@@ -252,7 +252,7 @@ class Cases:
     @staticmethod
     async def open_middle_case():
         prizes = [
-            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'license'
+            'car', 'money', 'money', 'exp', 'money', 'exp', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'license'
         ]
         prize = random.choice(prizes)
         match prize:
@@ -301,7 +301,7 @@ class Cases:
         if user is not None:
             if str(user['president_country']) == 'нет':
                 prizes = [
-                            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
+                            'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'money', 'exp', 'money', 'exp', 'money', 'exp',
                             'exp', 'country'
                         ]
             elif str(user['president_country']) != 'нет':
@@ -610,18 +610,33 @@ async def big_case(callback: types.CallbackQuery):
             font = ImageFont.truetype(
                 f'{os.getcwd()}/res/fonts/Blogger_Sans.otf', size=85)
             draw_text = ImageDraw.Draw(img)
-            # опыт
-            draw_text.text((1270, 475),
-                           f'{prize[0]}',
-                           font=font,
-                           fill='#62ca29')
-            img.save(f'{os.getcwd()}/res/case_pic/cache/big.png')
-            await bot.send_photo(
-                callback.message.chat.id,
-                photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
-                                filename='case_big'),
-                caption=f'{await username(callback)}, вы выиграли страну!',
-                parse_mode='HTML')
+            # страна
+            if prize[0] != 'нет':
+                draw_text.text((1270, 475),
+                               f'{prize[0]}',
+                               font=font,
+                               fill='#62ca29')
+                img.save(f'{os.getcwd()}/res/case_pic/cache/big.png')
+
+                await bot.send_photo(
+                    callback.message.chat.id,
+                    photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
+                                    filename='case_big'),
+                    caption=f'{await username(callback)}, вы выиграли страну!',
+                    parse_mode='HTML')
+            else:
+                draw_text.text((1270, 475),
+                               f'компенсация',
+                               font=font,
+                               fill='#62ca29')
+                img.save(f'{os.getcwd()}/res/case_pic/cache/big.png')
+
+                await bot.send_photo(
+                    callback.message.chat.id,
+                    photo=InputFile(f'{os.getcwd()}/res/case_pic/cache/big.png',
+                                    filename='case_big'),
+                    caption=f'{await username(callback)}, вы выиграли компенсацию!',
+                    parse_mode='HTML')
 
         # Начисление награды
         await db.give_prize_in_big_case(callback=callback, prize=prize)

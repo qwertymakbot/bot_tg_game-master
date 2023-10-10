@@ -1169,27 +1169,19 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
             for user in users_info:
                 database.users.update_one({'id': user['id']}, {'$set': {'citizen_country': 'нет'}})
             database.users.update_one({'id': int(data[0])}, {'$set': {'cash': pres_info['cash'] + int(data[2])}})
-            with open(f'{os.getcwd()}/res/countries.txt', 'r', encoding='utf-8') as f:
-                while True:
-                    line = f.readline()
-                    if not line:
-                        break
-                    else:
-                        countries_settings = line.replace('\n', '').split('.')
-                        if countries_settings[0] == data[1]:
-                            database.countries.update_one({'country': data[1]}, {'$set': {
-                                'president': 0,
-                                'cash': int(countries_settings[1]),
-                                'oil': int(countries_settings[2]),
-                                'food': int(countries_settings[3]),
-                                'territory': int(countries_settings[4]),
-                                'level': 0,
-                                'max_people': int(countries_settings[5]),
-                                'terr_for_farmers': int(countries_settings[6]),
-                                'cost': int(countries_settings[7]),
-                                'nalog_job': 1
-                            }})
-                            break
+            country = res_database.countries.find_one({'country': pres_info['president_country']})
+            database.countries.update_one({'country': country['country']},{'$set':{
+                'president': 0,
+                'cash': int(country['cash']),
+                'oil': int(country['oil']),
+                'food': int(country['food']),
+                'territory': int(country['territory']),
+                'level': 0,
+                'max_people': int(country['max_people']),
+                'terr_for_farmers': int(country['terr_for_farmers']),
+                'cost': int(country['cost']),
+                'nalog_job': 1
+            }})
             await bot.edit_message_text(f'{await username(callback)} успешно продал {data[1]} за {data[2]}$',
                                         callback.message.chat.id, callback.message.message_id, parse_mode='HTML')
         else:
@@ -1460,7 +1452,13 @@ async def all(callback: types.CallbackQuery, state: FSMContext):
                 but_buy = InlineKeyboardButton('Купить ✅',
                                                callback_data=f'marketbuyer_buy_{product}_{str(callback.from_user.id)[-3::]}_0')
                 key.add(but_nazad, but_buy, but_vpered, but_otmena)
+                for user in all_ads:
+                    isUser = database.users.find_one({'id': user['id']})
+                    if isUser is None:
+                        res_database.marketplace.delete_one({'id': user['id']})
+                        return
                 seller_info = database.users.find_one({'id': all_ads[0]['id']})
+
                 await callback.message.edit_text(f'Объявление о продаже от {await username_2(all_ads[0]["id"], seller_info["firstname"])}\n'
                                                  f'Продукт: {product}\n'
                                                  f'Количество: {all_ads[0]["quantity"]}\n'

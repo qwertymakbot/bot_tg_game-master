@@ -55,7 +55,13 @@ async def work(message: types.Message):
                                              datetime.datetime.now(tz=tz).day, datetime.datetime.now(tz=tz).hour,
                                              datetime.datetime.now(tz=tz).minute, datetime.datetime.now(tz=tz).second)
                 result = time_disease - time_now
-                await bot.send_message(message.chat.id,
+                # Если уже отболел
+                if '-' in str(result):
+                    res_database.disease.delete_one({'id': user_id})
+                    await work(message)
+                else:
+
+                    await bot.send_message(message.chat.id,
                                        f'{await username(message)}, вам ещё осталось болеть {result} 🦠',
                                        parse_mode='HTML')
             else:
@@ -142,6 +148,7 @@ async def work(message: types.Message):
                                                               'food': country_info['food'] - job_info['need_food']}})
                             # Если есть машина
                             car_info = database.users_cars.find_one({'$and': [{'id': user_id}, {'active': True}]})
+                            print(car_info)
                             if car_info is not None:
                                 need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
                                 if user_info['oil'] >= need_oil:
@@ -650,27 +657,20 @@ async def check_food_country(user_id):
         users_info = database.users.find({'citizen_country': country_info['country']})
         for user in users_info:
             database.users.update_one({'id': user['id']}, {'$set': {'citizen_country': 'нет'}})
-        with open(f'{os.getcwd()}/res/countries.txt', 'r', encoding='utf-8') as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                else:
-                    countries_settings = line.replace('\n', '').split('.')
-                    if countries_settings[0] == country_info['country']:
-                        database.countries.update_one({'country': country_info['country']}, {'$set': {
-                            'president': 0,
-                            'cash': int(countries_settings[1]),
-                            'oil': int(countries_settings[2]),
-                            'food': int(countries_settings[3]),
-                            'territory': int(countries_settings[4]),
-                            'level': 0,
-                            'max_people': int(countries_settings[5]),
-                            'terr_for_farmers': int(countries_settings[6]),
-                            'cost': int(countries_settings[7]),
-                            'nalog_job': 1
-                        }})
-                        break
+        country = res_database.countries.find_one({'country': president_info['president_country']})
+        database.countries.update_one({
+            'country': country['country'],
+            'president': 0,
+            'cash': int(country['cash']),
+            'oil': int(country['oil']),
+            'food': int(country['food']),
+            'territory': int(country['territory']),
+            'level': 0,
+            'max_people': int(country['max_people']),
+            'terr_for_farmers': int(country['terr_for_farmers']),
+            'cost': int(country['cost']),
+            'nalog_job': 1
+        })
         res_database.country_check_food.delete_one({'id': user_id})
         await bot.send_message(country_info['president'],
                                f'{username_2(country_info["president"], president_info["firstname"])}, вы не восстановили еду, поэтому ваша страна {country_info["country"]} была расформирована и возврату не подлежит!',

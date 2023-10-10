@@ -6,14 +6,15 @@ from create_bot import dp, bot
 @dp.message_handler(content_types='text', text=['Гараж', 'гараж'])
 async def garage(message: types.Message):
     user_cars = list(database.users_cars.find({'id': message.from_user.id}))
-    print(user_cars)
     if user_cars != []:
         await message.delete()
-        kb = InlineKeyboardMarkup(row_width=1)
+        kb = InlineKeyboardMarkup(row_width=2)
         activate_btn = InlineKeyboardButton(text='Активировать',
                                             callback_data=f'activate_{str(message.from_user.id)}_{user_cars[0]["car"]}')
         next_page_btn = InlineKeyboardButton(text='▶', callback_data=f'next_page_{str(message.from_user.id)}_0')
-        kb.row(activate_btn, next_page_btn)
+        disactivate_btn = InlineKeyboardButton('Дизактивировать',
+                                               callback_data=f'disactivate')
+        kb.add(activate_btn, next_page_btn, disactivate_btn)
         await message.answer(text=f'Модель автомобиля: {user_cars[0]["car"]}\n'
                                   f'Расход топлива в час: {user_cars[0]["fuel_per_hour"]}\n'
                                   f'Сокращает время работы на: {user_cars[0]["save_job_time"]}%\n'
@@ -33,7 +34,6 @@ async def activate_car(callback: types.CallbackQuery):
             await callback.message.answer(
                 f'{callback.from_user.first_name} для того что-бы ездить на автомобиле вам нужно получить права',
                 parse_mode='HTML')
-            await callback.answer()
 
         else:
             user_id = int(clbck[0])
@@ -44,14 +44,15 @@ async def activate_car(callback: types.CallbackQuery):
     else:
         await callback.answer('Это предназначено не вам!')
 
-
+@dp.callback_query_handler(lambda callback: 'disactivate' in callback.data)
+async def activate_car(callback: types.CallbackQuery):
+    database.users_cars.update_one({'id': callback.from_user.id, 'active': True}, {'$set': {'active': False}})
+    await callback.message.edit_text('Ваша машина дизактивирована!')
 @dp.callback_query_handler(lambda callback: 'next_page_' in callback.data)
 async def next_page_garage(callback: types.CallbackQuery):
     clbck = callback.data.replace('next_page_', '').split('_')
-    print(callback.data)
     page = int(clbck[1])
     user_id = int(clbck[0])
-    print(page)
     if callback.from_user.id == user_id:
         user_cars = list(database.users_cars.find({'id': user_id}))
         if page + 2 != len(user_cars):
@@ -110,7 +111,6 @@ async def previous_page_garage(callback: types.CallbackQuery):
                                              parse_mode='HTML')
             await callback.answer()
         elif page == 0:
-            user_cars = list(database.users_cars.find({'id': user_id}))
 
             user_cars = list(database.users_cars.find({'id': user_id}))
             kb = InlineKeyboardMarkup(row_width=1)

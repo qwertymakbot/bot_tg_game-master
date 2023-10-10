@@ -17,7 +17,7 @@ async def bonus(message):
                 'id': message.from_user.id,
                 'date': now.day
             })
-            rnd_cash = random.randint(1, 1000)
+            rnd_cash = random.randint(1000, 100000)
             user_info = database.users.find_one({'id': message.from_user.id})
             database.users.update_one({'id': message.from_user.id}, {'$set': {'cash': user_info['cash'] + rnd_cash}})
             await bot.send_message(message.chat.id,
@@ -29,7 +29,7 @@ async def bonus(message):
             else:
                 now = datetime.datetime.now()
                 database.bonus.update_one({'id': message.from_user.id}, {'$set': {'date': now.day}})
-                rnd_cash = random.randint(1, 1000)
+                rnd_cash = random.randint(1000, 30000)
                 user_info = database.users.find_one({'id': message.from_user.id})
                 database.users.update_one({'id': message.from_user.id},
                                           {'$set': {'cash': user_info['cash'] + rnd_cash}})
