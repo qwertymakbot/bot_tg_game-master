@@ -8,7 +8,6 @@ import random
 from datetime import datetime, timedelta
 from time import perf_counter
 
-import openai_async
 import pytz
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 from aiogram import executor, types, Dispatcher
@@ -20,18 +19,13 @@ from aiogram.utils.markdown import hlink
 from aiogram.utils.markdown import quote_html
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dateutil import parser
-from gpytranslate import Translator
 
 from create_bot import bot
 from create_bot import dp
 from filters import antiflood
-from filters.filters import IsQuestions, IsPromo, IsFootbal, IsBasketball, IsDice, IsDarts, IsBowling, \
-    IsSlot, ShareMoney
-from freeGPT import AsyncClient
-# from background import keep_alive
-import re
+from filters.filters import IsPromo, ShareMoney
 
-t = Translator()
+# from background import keep_alive
 
 from pymongo.mongo_client import MongoClient
 
@@ -71,7 +65,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Вызывается при старте
 async def on_startup(_):
-
+    return
 
     # проверка активности президентов
     tz = pytz.timezone('Etc/GMT-3')
@@ -671,7 +665,7 @@ async def text(message, state: FSMContext):
             pass
     await message.reply(f'Текст разослан {num} раз')
 
-@dp.message_handler(content_types='text', text=['Ивент', 'ивент', 'Событие', 'событие'])
+@dp.message_handler(content_types='tex', text=['Ивент', 'ивент', 'Событие', 'событие'])
 async def evets(message: types.Message):
     await message.reply(f'Проходит событие на 1 БП (РУ регион) \n'
                         f'Чтобы быть участником события вам необходимо:\n'
@@ -1087,16 +1081,6 @@ async def n1(message):
     await message.reply(f'Мой ID: {message.from_user.id}\n'
                         f'ID чата: {message.chat.id}')
 
-@dp.message_handler(IsQuestions())
-async def text(message: types.Message):
-    prompt = message.text
-    if not prompt:
-        await message.answer('Вы задали пустой запрос.')
-    else:
-        msg = await message.reply('Ищу ответ на ваш вопрос!')
-        resp = await AsyncClient.create_completion("gpt4", prompt.replace('Бот', '').replace('бот', ''))
-        await bot.edit_message_text(resp.encode('utf-8').decode('unicode-escape'), chat_id=message.chat.id, message_id=msg.message_id)
-
 
 @dp.message_handler(IsPromo())
 async def text(message):
@@ -1372,7 +1356,6 @@ if __name__ == '__main__':
     from handlers123 import job, bussiness, all, bonus, education
     from handlers123.shop import inline_shop
     from handlers123.jobs import autocreater, feldsher, predprinimatel, president, stroitel, krupye
-    from handlers123 import joke
 
     # jobs
     autocreater.register_handlers_autocreater(dp)
@@ -1389,8 +1372,6 @@ if __name__ == '__main__':
     inline_shop.register_handlers_shop(dp)
     # education
     education.register_handler_education(dp)
-    # joke
-    joke.register_handlers_countries(dp)
     # bonus
     bonus.register_handlers_bonus(dp)
     # antiflood

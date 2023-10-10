@@ -10,7 +10,7 @@ database_adm = MongoClient(
     "mongodb+srv://maksemqwerty:maksem228@cluster0.mylnsur.mongodb.net/?retryWrites=true&w=majority").adminka
 
 #
-@dp.message_handler(commands='rules')
+@dp.message_handler(commands='2rules')
 async def rules(message: types.Message):
     with open(f'{os.getcwd()}/res/rules.txt', 'r', encoding='utf-8') as f:
         txt = f.readlines()
@@ -22,10 +22,10 @@ async def rules(message: types.Message):
 @dp.message_handler(content_types=[types.ContentType.NEW_CHAT_MEMBERS])
 async def new_members_handler(message: types.Message):
     await message.delete()
-    new_member = message.new_chat_members[0]
-    await bot.send_message(message.chat.id, f"Добро пожаловать, танкист {new_member.mention}\n"
-                                            f'Ты попал в чатик по BLITZ, который объединяет игроков RU и EU регионов\n'
-                                            f"Правила: /rules")
+    #new_member = message.new_chat_members[0]
+    #await bot.send_message(message.chat.id, f"Добро пожаловать, танкист {new_member.mention}\n"
+    #                                        f'Ты попал в чатик по BLITZ, который объединяет игроков RU и EU регионов\n'
+    #                                        f"Правила: /rules")
 # Вышедший участник
 @dp.message_handler(content_types=[types.ContentType.LEFT_CHAT_MEMBER])
 async def lefy_members_handler(message: types.Message):
