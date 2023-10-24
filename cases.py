@@ -230,8 +230,7 @@ class Cases:
         prizes = ['money', 'exp']
         prize = random.choice(prizes)
 
-        match prize:
-            case 'money':
+        if 'money' in prize:
                 rand = random.randint(0, 10)
                 if rand == 1:
                     money = random.randint(8000, 100000)
@@ -240,14 +239,14 @@ class Cases:
                     money = random.randint(100, 8000)
                     return [money, 'cash']
 
-            case 'exp':
-                rand = random.randint(0, 10)
-                if rand == 1:
-                    exp = random.randint(1000, 10000)
-                    return [exp, 'exp']
-                else:
-                    exp = random.randint(50, 1000)
-                    return [exp, 'exp']
+        elif 'exp' in prize:
+            rand = random.randint(0, 10)
+            if rand == 1:
+                exp = random.randint(1000, 10000)
+                return [exp, 'exp']
+            else:
+                exp = random.randint(50, 1000)
+                return [exp, 'exp']
 
     @staticmethod
     async def open_middle_case():
@@ -255,46 +254,38 @@ class Cases:
             'car', 'money', 'money', 'exp', 'money', 'exp', 'exp', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'license'
         ]
         prize = random.choice(prizes)
-        match prize:
-            case 'money':
-                rand = random.randint(0, 8)
-                if rand == 1:
-                    money = random.randint(700_000, 1_500_000)
-                    return [money, 'cash']
-                else:
-                    money = random.randint(100_000, 700_000)
-                    return [money, 'cash']
+        
+        if 'money' in prize:
+            rand = random.randint(0, 8)
+            if rand == 1:
+                money = random.randint(700_000, 1_500_000)
+                return [money, 'cash']
+            else:
+                money = random.randint(100_000, 700_000)
+                return [money, 'cash']
 
-            case 'exp':
-                rand = random.randint(0, 8)
-                if rand == 1:
-                    exp = random.randint(7000, 15000)
-                    return [exp, 'exp']
-                else:
-                    exp = random.randint(100, 6300)
-                    return [exp, 'exp']
+        elif 'exp' in prize:
+            rand = random.randint(0, 8)
+            if rand == 1:
+                exp = random.randint(7000, 15000)
+                return [exp, 'exp']
+            else:
+                exp = random.randint(100, 6300)
+                return [exp, 'exp']
 
-            case 'car':
-                rand = random.randint(0, 20)
-
-                if rand == 1:
-                    cars = ecar
-                    car_name = random.choice(cars)
-                    return [car_name, 'car']
-                else:
-                    cars = gcar
-                    car_name = random.choice(cars)
-                    return [car_name, 'car']
-            case 'license':
-                return ['Права B категории', 'license']
-        #case 'class_in_school':
-        #    rand = random.randint(0, 10)
-        #    if rand == 1 or rand == 2:
-        #        class_in_school = random.randint(0, 11)
-        #        print(f"{username} выиграл переход на {class_in_school} класс школы ")
-        #    else:
-        #        print(f'{username} выиграл переход в следующий класс')
-
+        elif 'car' in prize:
+            rand = random.randint(0, 20)
+            if rand == 1:
+                cars = ecar
+                car_name = random.choice(cars)
+                return [car_name, 'car']
+            else:
+                cars = gcar
+                car_name = random.choice(cars)
+                return [car_name, 'car']
+        elif 'license' in prize:
+            return ['Права B категории', 'license']
+        
     @staticmethod
     async def open_big_case(user_id: int) -> None:
         user = database.users.find_one({'id': int(user_id)})
@@ -307,44 +298,39 @@ class Cases:
             elif str(user['president_country']) != 'нет':
                 prizes = [
                             'car', 'money', 'exp', 'money', 'exp', 'money', 'exp', 'money',
-                            'exp', 'money'
-                        ]
+                            'exp', 'money']
         prize = random.choice(prizes)
-        match prize:
-            case 'money':
-                rand = random.randint(0, 8)
-                if rand == 1:
-                    money = random.randint(2_000_000, 10_000_000)
-                    return [money, 'cash']
-                else:
-                    money = random.randint(650_000, 2_000_000)
-                    return [money, 'cash']
-
-            case 'exp':
-                rand = random.randint(0, 8)
-                if rand == 1:
-                    exp = random.randint(30000, 80000)
-                    return [exp, 'exp']
-                else:
-                    exp = random.randint(8000, 30000)
-                    return [exp, 'exp']
-
-            case 'car':
-                rand = random.randint(0, 8)
-                if rand == 1:
-                    car_name = random.choice(ecar)
-                    return [car_name, 'car']
-                else:
-                    car_name = random.choice(gcar)
-                    return [car_name, 'car']
-            case 'country':
-                country_list = list(database.countries.find({'president': 0}))
-                if country_list:
-                    country = random.choice(country_list)
-                    return [country['country'], 'country']
-                else:
-                    return ['нет', 'country']
-
+        if 'money' in prize:
+            rand = random.randint(0, 8)
+            if rand == 1:
+                money = random.randint(2_000_000, 10_000_000)
+                return [money, 'cash']
+            else:
+                money = random.randint(650_000, 2_000_000)
+                return [money, 'cash']
+        elif 'exp' in prize:
+            rand = random.randint(0, 8)
+            if rand == 1:
+                exp = random.randint(30000, 80000)
+                return [exp, 'exp']
+            else:
+                exp = random.randint(8000, 30000)
+                return [exp, 'exp']
+        elif 'car' in prize:
+            rand = random.randint(0, 8)
+            if rand == 1:
+                car_name = random.choice(ecar)
+                return [car_name, 'car']
+            else:
+                car_name = random.choice(gcar)
+                return [car_name, 'car']
+        elif 'country' in prize:
+            country_list = list(database.countries.find({'president': 0}))
+            if country_list:
+                country = random.choice(country_list)
+                return [country['country'], 'country']
+            else:
+                return ['нет', 'country']
 
 async def little_case(callback: types.CallbackQuery):
     db = Database()

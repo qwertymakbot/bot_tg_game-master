@@ -58,7 +58,7 @@ def imports():
 # Разбиение на триады
 import locale
 
-locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
+# locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
 #  Логгирование
 logging.basicConfig(level=logging.INFO)
 
