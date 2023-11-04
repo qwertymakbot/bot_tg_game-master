@@ -21,8 +21,8 @@ async def run_provider(prompt, msg):
     try:
         response = await g4f.ChatCompletion.create_async(
             model=g4f.models.gpt_35_turbo,
-            messages=[{"role": "user", "content": prompt}],
-            provider=g4f.Provider.ChatgptAi
+            messages=[{"role": "user", "content": prompt}]
+            #provider=g4f.Provider.ChatgptAi
         )
         await bot.edit_message_text(response, chat_id=msg.chat.id, message_id=msg.message_id)
     except Exception as e:

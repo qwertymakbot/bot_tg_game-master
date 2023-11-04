@@ -58,14 +58,22 @@ def imports():
 # Разбиение на триады
 import locale
 
-# locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
+locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
 #  Логгирование
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename='logs.log',filemode='w' , level=logging.INFO)
+
+@dp.message_handler(commands=['logs'])
+async def send_logs(message: types.message):
+    devs_id = [735569411, 1578668223]
+    user_id = message.from_user.id
+    if user_id in devs_id:
+        await message.reply_document(open('logs.log', 'rb'))
+    else:
+        await message.reply('Облом =)')
 
 
 # Вызывается при старте
 async def on_startup(_):
-    return
 
     # проверка активности президентов
     tz = pytz.timezone('Etc/GMT-3')
@@ -213,7 +221,7 @@ async def on_startup(_):
             await check_food_country(check_food['id'])
         else:
             scheduler.add_job(check_food_country, "date",
-                              run_date=build['time'],
+                              run_date=check_food['time'],
                               args=(check_food['id'],), timezone=tz)
 
     autoschool_list = list(res_database.autoschool.find())

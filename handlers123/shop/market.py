@@ -61,7 +61,6 @@ class Marketplace:
         })
         user = database.users.find_one({'id': data['id']})
         database.users.update_one({'id': data['id']}, {'$set': {'food': int(user['food']) - int(data['quantity'])}})
-        print('Обьявление успешно добавлено')
 
     async def sale_car(message: types.Message, price, quantity, name_car) -> str:
         marketplace_collection.insert_one({
@@ -205,7 +204,6 @@ async def load_data(data: dict):
         'id': data['id'],
         'product': data['product']
     }
-    print(d)
     return d
 #data = FSMContext.get_data(MarketplaceStatesSaleFood)
 
