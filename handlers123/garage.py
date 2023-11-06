@@ -12,8 +12,8 @@ async def garage(message: types.Message):
         activate_btn = InlineKeyboardButton(text='Активировать',
                                             callback_data=f'activate_{str(message.from_user.id)}_{user_cars[0]["car"]}')
         next_page_btn = InlineKeyboardButton(text='▶', callback_data=f'next_page_{str(message.from_user.id)}_0')
-        disactivate_btn = InlineKeyboardButton('Дизактивировать',
-                                               callback_data=f'disactivate')
+        disactivate_btn = InlineKeyboardButton('Деактивировать',
+                                               callback_data=f'diactivate')
         kb.add(activate_btn, next_page_btn, disactivate_btn)
         await message.answer(text=f'Модель автомобиля: {user_cars[0]["car"]}\n'
                                   f'Расход топлива в час: {user_cars[0]["fuel_per_hour"]}\n'
@@ -43,11 +43,14 @@ async def activate_car(callback: types.CallbackQuery):
             await callback.message.edit_text(f'Вы активировали автомобиль: {name_car}')
     else:
         await callback.answer('Это предназначено не вам!')
+        
 
-@dp.callback_query_handler(lambda callback: 'disactivate' in callback.data)
+@dp.callback_query_handler(lambda callback: 'diactivate' in callback.data)
 async def activate_car(callback: types.CallbackQuery):
     database.users_cars.update_one({'id': callback.from_user.id, 'active': True}, {'$set': {'active': False}})
     await callback.message.edit_text('Ваша машина дизактивирована!')
+    
+    
 @dp.callback_query_handler(lambda callback: 'next_page_' in callback.data)
 async def next_page_garage(callback: types.CallbackQuery):
     clbck = callback.data.replace('next_page_', '').split('_')
