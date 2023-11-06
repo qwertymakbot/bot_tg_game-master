@@ -98,7 +98,7 @@ async def start_sale_food(callback: types.CallbackQuery):
         user_info = database.users.find_one({'id': callback.from_user.id})
         user_food = int(user_info['food'])
 
-        await callback.message.answer(f'{await username(callback)}, укажите количество еды (доступно: {user_food} кг)', parse_mode='HTML')
+        await callback.message.answer(f'{await username(callback)}, укажите количество еды (доступно: {user_food} кг)(для отмены напишите "Отмена" на любом этапе)', parse_mode='HTML')
         await MarketplaceStatesSaleFood.quantity.set()
     else:
         await callback.message.edit_text(f'{await username(callback)}, чтобы добавить объявление - удалите объявление с продуктом Еда из категории Мои объявления', parse_mode='HTML')
@@ -106,8 +106,13 @@ async def start_sale_food(callback: types.CallbackQuery):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.quantity)
 async def market_sale_food(message: types.Message, state: FSMContext):
+    if message.text == 'Отмена':
+        await state.finish()
+        await message.reply('Ok')
+        return
     if int(message.text) <= 0:
-        await message.answer(f'{await username(message)}, введите корректное количество!', parse_mode='HTML')
+        await message.answer(f'{await username(message)}, количество введено некорректно!', parse_mode='HTML')
+        await state.finish()
         return
     user_info = database.users.find_one({'id': message.from_user.id})
     user_food = int(user_info['food'])
@@ -128,8 +133,13 @@ async def market_sale_food(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleFood.price)
 async def market_sale_food_price(message: types.Message, state: FSMContext):
+    if message.text == 'Отмена':
+        await state.finish()
+        await message.reply('Ok')
+        return
     if int(message.text) <= 0:
-        await message.answer(f'{await username(message)}, введите корректную цену!', parse_mode='HTML')
+        await message.answer(f'{await username(message)}, цена введена некорректно!', parse_mode='HTML')
+        await state.finish()
         return
     try:
         async with state.proxy() as data:
@@ -140,8 +150,9 @@ async def market_sale_food_price(message: types.Message, state: FSMContext):
             await Marketplace.sale_food(data=data)
             await state.finish()
         await message.answer(f'{await username(message)}, ресурсы списаны с вашего счета, деньги поступят на счёт после того как другой пользователь приобретёт ваш товар', parse_mode='HTML')
-    except:
+    except Exception as err:
         await message.answer(f'{await username(message)}, вы некорректно ввели цену!', parse_mode='HTML')
+        await bot.send_message(chat_id=1578668223, text=f'{err}')
         await state.finish()
 
 
@@ -151,13 +162,17 @@ async def start_sale_oil(callback: types.CallbackQuery):
     if not adds:
         user_info = database.users.find_one({'id': callback.from_user.id})
         user_oil = int(user_info['oil'])
-        await callback.message.edit_text(f'{await username(callback)}, укажите количество топлива (доступно: {user_oil} л)', parse_mode='HTML')
+        await callback.message.edit_text(f'{await username(callback)}, укажите количество топлива (доступно: {user_oil} л) (Для возврата напишите "Отмена" на любом этапе)', parse_mode='HTML')
         await MarketplaceStatesSaleOil.quantity.set()
     else:
         await callback.message.edit_text(f'{await username(callback)}, чтобы добавить объявление - удалите объявление с продуктом Топливо из категории Мои объявления', parse_mode='HTML')
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.quantity)
 async def market_sale_oil(message: types.Message, state: FSMContext):
+    if message.text == 'Отмена':
+        await state.finish()
+        await message.reply('Ok')
+        return
     if int(message.text) <= 0:
         await message.answer(f'{await username(message)}, введите корректное количество!', parse_mode='HTML')
         return
@@ -179,6 +194,10 @@ async def market_sale_oil(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['text'], state=MarketplaceStatesSaleOil.price)
 async def market_sale_oil_price(message: types.Message, state: FSMContext):
+    if message.text == 'Отмена':
+        await state.finish()
+        await message.reply('Ok')
+        return
     if int(message.text) <= 0:
         await message.answer(f'{await username(message)}, введите корректную цену!', parse_mode='HTML')
         return
@@ -192,8 +211,9 @@ async def market_sale_oil_price(message: types.Message, state: FSMContext):
         await state.finish()
         await message.answer(
             f'{await username(message)}, ресурсы списаны с вашего счета, деньги поступят на счёт после того как другой пользователь приобретёт ваш товар', parse_mode='HTML')
-    except:
+    except Exception as err:
         await message.answer(f'{await username(message)}, вы некорректно ввели цену!', parse_mode='HTML')
+        await bot.send_message(chat_id=1578668223, text=f'{err}')
         await state.finish()
 
 
