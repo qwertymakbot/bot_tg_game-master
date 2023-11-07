@@ -17,5 +17,5 @@ def run():
 
 
 def keep_alive():
-  t = Thread(tarfromget=run)
+  t = Thread(target=run)
   t.start()

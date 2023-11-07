@@ -7,6 +7,7 @@ import os
 import random
 from datetime import datetime, timedelta
 from time import perf_counter
+from site_flask import keep_alive
 
 import pytz
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -70,6 +71,19 @@ async def send_logs(message: types.message):
         await message.reply_document(open('logs.log', 'rb'))
     else:
         await message.reply('Облом =)')
+        
+
+@dp.message_handler(commands=['jobs_info'])
+async def jobs_info(message: types.Message):
+    users_id = [735569411, 1578668223]
+    user_id = message.from_user.id
+    if user_id in users_id:    
+        data = database.jobs.find()
+        for item in data:
+            msg = f"Название работы: {item['name_job']}\n    Требуется опыта для работы: {item['need_exp']}\n    Зарплата: {item['cash']}\n    Время работы: {item['job_time']}мин\n    Снимаемая еда за работу: {item['need_food']}\n    Стоимость обучения: {item['need_cash']}"
+            await message.reply(msg)
+    else:
+        await message_reply('Данная команда предназначена только для разработчиков и менеджеров бота')
 
 
 # Вызывается при старте
@@ -1387,4 +1401,5 @@ if __name__ == '__main__':
     # all
     all.reg_all(dp)
 
+    keep_alive()
     executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
