@@ -83,7 +83,7 @@ async def jobs_info(message: types.Message):
             msg = f"Название работы: {item['name_job']}\n    Требуется опыта для работы: {item['need_exp']}\n    Зарплата: {item['cash']}\n    Время работы: {item['job_time']}мин\n    Снимаемая еда за работу: {item['need_food']}\n    Стоимость обучения: {item['need_cash']}"
             await message.reply(msg)
     else:
-        await message_reply('Данная команда предназначена только для разработчиков и менеджеров бота')
+        await message.reply('Данная команда предназначена только для разработчиков и менеджеров бота')
 
 
 # Вызывается при старте
