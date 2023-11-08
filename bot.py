@@ -57,18 +57,18 @@ def imports():
 
 
 # Разбиение на триады
-import locale
+#import locale
 
-locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
+#locale.setlocale(locale.LC_ALL, "ru_RU.UTF-8")
 #  Логгирование
-logging.basicConfig(filename='logs.log',filemode='w' , level=logging.INFO)
+logging.basicConfig(filename='app/logs.log', filemode='w', level=logging.INFO)
 
 @dp.message_handler(commands=['logs'])
 async def send_logs(message: types.message):
     devs_id = [735569411, 1578668223]
     user_id = message.from_user.id
     if user_id in devs_id:
-        await message.reply_document(open('logs.log', 'rb'))
+        await message.reply_document(open('app/logs.log', 'rb'))
     else:
         await message.reply('Облом =)')
         

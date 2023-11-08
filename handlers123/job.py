@@ -148,7 +148,6 @@ async def work(message: types.Message):
                                                               'food': country_info['food'] - job_info['need_food']}})
                             # Если есть машина
                             car_info = database.users_cars.find_one({'$and': [{'id': user_id}, {'active': True}]})
-                            print(car_info)
                             if car_info is not None:
                                 need_oil = round(car_info['fuel_per_hour'] / (60 / job_info['job_time']))
                                 if user_info['oil'] >= need_oil:
