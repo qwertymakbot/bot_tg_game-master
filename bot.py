@@ -75,7 +75,7 @@ async def send_logs(message: types.message):
 
 @dp.message_handler(commands=['jobs_info'])
 async def jobs_info(message: types.Message):
-    users_id = [735569411, 1578668223]
+    users_id = [735569411, 1578668223, 5325181616]
     user_id = message.from_user.id
     if user_id in users_id:    
         data = database.jobs.find()
